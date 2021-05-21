@@ -12,14 +12,14 @@ def fill_fc_weights(layers):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-def make_head(head_kernel, last_channel, convs, out_channels):
-    sequence = [ConvBlock(head_kernel, last_channel, convs[0], with_bn=False)]
+def make_head(head_kernel, last_channel, conv_dims, out_channels):
+    sequence = [ConvBlock(head_kernel, last_channel, conv_dims[0], with_bn=False)]
 
-    for i in range(1, len(convs)):
-        sequence.append(nn.Conv2d(convs[i-1], convs[i], (1,1)))
+    for i in range(1, len(conv_dims)):
+        sequence.append(nn.Conv2d(conv_dims[i-1], conv_dims[i], (1,1)))
         sequence.append(nn.ReLU(inplace=True))
 
-    sequence.append(nn.Conv2d(convs[-1], out_channels, kernel_size=(1,1)))
+    sequence.append(nn.Conv2d(conv_dims[-1], out_channels, kernel_size=(1,1)))
 
     return nn.Sequential(*sequence)
 
@@ -38,10 +38,10 @@ class BaseModelPoly(nn.Module):
         # For now, for the same behavior, from CenterPoly code head_convs must be [dims[0]]
         for head in self.heads:
             out_channels = self.heads[head]
-            convs = head_convs[head]
+            conv_dims = head_convs[head]
 
             module = nn.ModuleList([
-                make_head(head_kernel, last_channel, convs, out_channels)
+                make_head(head_kernel, last_channel, conv_dims, out_channels)
                 for _ in self.num_stacks
             ])
 
