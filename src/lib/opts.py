@@ -254,6 +254,17 @@ class opts(object):
     self.parser.add_argument('--custom_dataset_img_path', default='')
     self.parser.add_argument('--custom_dataset_ann_path', default='')
 
+    # polydet
+    self.parser.add_argument('--poly_weight', type=float, default=0.1,
+                             help='loss weight for polygons points.')
+    self.parser.add_argument('--depth_weight', type=float, default=0.1,
+                             help='loss weight for pseudo depth.')
+    self.parser.add_argument('--nbr_points', type=int, default=16,
+                             help='number of points for polygons')
+    self.parser.add_argument('--cat_spec_poly', action='store_true',
+                             help='category specific polygon points.')
+
+
   def parse(self, args=''):
     if args == '':
       opt = self.parser.parse_args()
@@ -340,7 +351,14 @@ class opts(object):
     opt.input_res = max(opt.input_h, opt.input_w)
     opt.output_res = max(opt.output_h, opt.output_w)
   
-    opt.heads = {'hm': opt.num_classes, 'reg': 2, 'wh': 2}
+    # TODO Are we keeping the cat_spec_poly option?
+    if 'polydet' in opt.task:
+      opt.heads = {'hm': opt.num_classes,
+                   'reg': 2,
+                   'poly': opt.nbr_points*2 if not opt.cat_spec_poly else opt.nbr_points*2 * opt.num_classes,
+                   'pseudo_depth': 1}    
+    else:
+      opt.heads = {'hm': opt.num_classes, 'reg': 2, 'wh': 2}
 
     if 'tracking' in opt.task:
       opt.heads.update({'tracking': 2})
@@ -372,7 +390,9 @@ class opts(object):
                    'tracking': opt.tracking_weight,
                    'ltrb_amodal': opt.ltrb_amodal_weight,
                    'nuscenes_att': opt.nuscenes_att_weight,
-                   'velocity': opt.velocity_weight}
+                   'velocity': opt.velocity_weight,
+                   'poly': opt.poly_weight,
+                   'pseudo_depth': opt.depth_weight}
     opt.weights = {head: weight_dict[head] for head in opt.heads}
     for head in opt.weights:
       if opt.weights[head] == 0:

@@ -13,6 +13,7 @@ from .networks.resnet import PoseResNet
 from .networks.dlav0 import DLASegv0
 from .networks.generic_network import GenericNetwork
 
+# TODO ADD POLYDET_DLA?
 _network_factory = {
   'resdcn': PoseResDCN,
   'dla': DLASeg,
