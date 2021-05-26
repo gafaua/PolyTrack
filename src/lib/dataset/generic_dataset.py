@@ -310,6 +310,12 @@ class GenericDataset(data.Dataset):
 
       if self.opt.velocity and 'velocity' in anns[k]:
         anns[k]['velocity'] = [-10000, -10000, -10000]
+    
+      if 'poly' in self.opt.heads and 'poly' in anns[k]:
+        poly = anns[k]['poly']
+        for i in range(0, len(poly), 2):
+          poly[i] = width - poly[i] - 1
+        anns[k]['poly'] = poly
 
     return anns
 
@@ -339,7 +345,8 @@ class GenericDataset(data.Dataset):
     regression_head_dims = {
       'reg': 2, 'wh': 2, 'tracking': 2, 'ltrb': 4, 'ltrb_amodal': 4, 
       'nuscenes_att': 8, 'velocity': 3, 'hps': self.num_joints * 2, 
-      'dep': 1, 'dim': 3, 'amodel_offset': 2}
+      'dep': 1, 'dim': 3, 'amodel_offset': 2, 
+      'poly': self.opt.nbr_points*2, 'pseudo_depth': 1}
 
     for head in regression_head_dims:
       if head in self.opt.heads:
@@ -426,10 +433,38 @@ class GenericDataset(data.Dataset):
     h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
     if h <= 0 or w <= 0:
       return
+    # TODO change this gaussian radius to elliptical
+    # TODO change ct for center of mass based on polys
     radius = gaussian_radius((math.ceil(h), math.ceil(w)))
-    radius = max(0, int(radius)) 
+    radius = max(0, int(radius))
+
     ct = np.array(
       [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
+
+    # PolyDet
+    if 'poly' in self.opt.heads:
+      if 'poly' in ann:
+        poly = np.array(ann['poly'], dtype=np.float32)
+        #TODO test if those transforms actually work.
+        for i in range(0, len(poly), 2):
+          poly[i], poly[i+1] = affine_transform([poly[i], poly[i+1]], trans_output)
+          poly[i] = np.clip(poly[i], 0, self.opt.output_w - 1)
+          poly[i+1] = np.clip(poly[i+1], 0, self.opt.output_h - 1)
+
+        ret['poly_mask'][k] = 1 # TODO find out why this is done
+        ret['poly'][k] = poly
+        gt_det['poly'].append(ret['poly'][k] )
+
+        # Define ct as center of mass
+        mass_cx, mass_cy = 0, 0
+        for i in range(0, len(poly), 2):
+          mass_cx += poly[i]
+          mass_cy += poly[i+1]
+        ct[0] = mass_cx / (len(poly)/2)
+        ct[1] = mass_cy / (len(poly)/2)
+      else:
+        gt_det['poly'].append(np.zeros(self.opt.nbr_points * 2, dtype=np.float32))
+    # End PolyDet
     ct_int = ct.astype(np.int32)
     ret['cat'][k] = cls_id - 1
     ret['mask'][k] = 1
@@ -448,6 +483,15 @@ class GenericDataset(data.Dataset):
     gt_det['clses'].append(cls_id - 1)
     gt_det['cts'].append(ct)
 
+    # PolyDet
+    if 'pseudo_depth' in self.opt.heads:
+      if 'pseudo_depth' in ann:
+        ret['pseudo_depth_mask'][k] = 1
+        ret['pseudo_depth'][k] = ann['pseudo_depth']
+        gt_det['pseudo_depth'].append(ret['pseudo_depth'][k])
+      else:
+        gt_det['pseudo_depth'].append(0)
+    # End PolyDet
     if 'tracking' in self.opt.heads:
       if ann['track_id'] in track_ids:
         pre_ct = pre_cts[track_ids.index(ann['track_id'])]
@@ -588,7 +632,9 @@ class GenericDataset(data.Dataset):
                 'pre_cts': np.array([[0, 0]], dtype=np.float32),
                 'tracking': np.array([[0, 0]], dtype=np.float32),
                 'bboxes_amodal': np.array([[0, 0]], dtype=np.float32),
-                'hps': np.zeros((1, 17, 2), dtype=np.float32),}
+                'hps': np.zeros((1, 17, 2), dtype=np.float32),
+                'poly': np.zeros(self.opt.nbr_points * 2, dtype=np.float32),
+                'pseudo_depth': np.array([0], dtype=np.float32),}
     gt_det = {k: np.array(gt_det[k], dtype=np.float32) for k in gt_det}
     return gt_det
 

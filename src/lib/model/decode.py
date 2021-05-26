@@ -137,8 +137,42 @@ def generic_decode(output, K=100, opt=None):
                         xs0.view(batch, K, 1) + ltrb[..., 2:3], 
                         ys0.view(batch, K, 1) + ltrb[..., 3:4]], dim=2)
     ret['bboxes'] = bboxes
-
  
+  # PolyDet heads
+  if 'poly' in output:
+    polys = output['poly']
+    polys = _tranpose_and_gather_feat(polys, inds)
+    polys = polys.view(batch, K, polys.shape[-1])
+
+    polys[..., 0::2] += xs
+    polys[..., 1::2] += ys
+
+    ret['polys'] = polys
+
+    # Get bounding boxes from polygons
+
+    poly_xs = polys[..., 0::2].clone().detach()
+    poly_ys = polys[..., 1::2].clone().detach()
+
+    poly_xs_min = torch.min(poly_xs, dim=2, keepdim=True)[0]
+    poly_xs_max = torch.max(poly_xs, dim=2, keepdim=True)[0]
+    poly_ys_min = torch.min(poly_ys, dim=2, keepdim=True)[0]
+    poly_ys_max = torch.max(poly_ys, dim=2, keepdim=True)[0]
+
+    # might need that for nms
+    bboxes = torch.cat([poly_xs_min,
+                    poly_ys_min,
+                    poly_xs_max,
+                    poly_ys_max], dim=2)
+
+    ret['bboxes'] = bboxes
+
+  if 'pseudo_depth' in output:
+    depth = output['pseudo_depth']
+    depth = _tranpose_and_gather_feat(depth, inds).view(batch, K, 1).float()
+    ret['pseudo_depth'] = depth
+
+
   regression_heads = ['tracking', 'dep', 'rot', 'dim', 'amodel_offset',
     'nuscenes_att', 'velocity']
 

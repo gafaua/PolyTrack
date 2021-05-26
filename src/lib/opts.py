@@ -261,8 +261,10 @@ class opts(object):
                              help='loss weight for pseudo depth.')
     self.parser.add_argument('--nbr_points', type=int, default=16,
                              help='number of points for polygons')
-    self.parser.add_argument('--cat_spec_poly', action='store_true',
-                             help='category specific polygon points.')
+
+    self.parser.add_argument('--elliptical_gt', action='store_true',
+                             help='use elliptical gaussians to train '
+                                  'keypoint heatmaps.')
 
 
   def parse(self, args=''):
@@ -351,11 +353,10 @@ class opts(object):
     opt.input_res = max(opt.input_h, opt.input_w)
     opt.output_res = max(opt.output_h, opt.output_w)
   
-    # TODO Are we keeping the cat_spec_poly option?
     if 'polydet' in opt.task:
       opt.heads = {'hm': opt.num_classes,
                    'reg': 2,
-                   'poly': opt.nbr_points*2 if not opt.cat_spec_poly else opt.nbr_points*2 * opt.num_classes,
+                   'poly': opt.nbr_points*2,
                    'pseudo_depth': 1}    
     else:
       opt.heads = {'hm': opt.num_classes, 'reg': 2, 'wh': 2}

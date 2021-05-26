@@ -48,6 +48,13 @@ def generic_post_process(
           dets['bboxes'][i][j].reshape(2, 2), trans).reshape(4)
         item['bbox'] = bbox
 
+      # PolyDet TODO handle polys post process
+      if 'polys' in dets:
+          ...
+      if 'pseudo_depth' in dets:
+          item['pseudo_depth'] = dets['pseudo_depth'][i][j]
+      # End PolyDet
+
       if 'hps' in dets:
         pts = transform_preds_with_trans(
           dets['hps'][i][j].reshape(-1, 2), trans).reshape(-1)

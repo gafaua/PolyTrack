@@ -50,17 +50,17 @@ class GenericLoss(torch.nn.Module):
         losses['hm'] += self.crit(
           output['hm'], batch['hm'], batch['ind'], 
           batch['mask'], batch['cat']) / opt.num_stacks
-      
+
       regression_heads = [
         'reg', 'wh', 'tracking', 'ltrb', 'ltrb_amodal', 'hps', 
-        'dep', 'dim', 'amodel_offset', 'velocity']
+        'dep', 'dim', 'amodel_offset', 'velocity', 'poly', 'pseudo_depth']
 
       for head in regression_heads:
         if head in output:
           losses[head] += self.crit_reg(
             output[head], batch[head + '_mask'],
             batch['ind'], batch[head]) / opt.num_stacks
-      
+
       if 'hm_hp' in output:
         losses['hm_hp'] += self.crit(
           output['hm_hp'], batch['hm_hp'], batch['hp_ind'], 
@@ -69,7 +69,7 @@ class GenericLoss(torch.nn.Module):
           losses['hp_offset'] += self.crit_reg(
             output['hp_offset'], batch['hp_offset_mask'],
             batch['hp_ind'], batch['hp_offset']) / opt.num_stacks
-        
+
       if 'rot' in output:
         losses['rot'] += self.crit_rot(
           output['rot'], batch['rot_mask'], batch['ind'], batch['rotbin'],
@@ -83,7 +83,7 @@ class GenericLoss(torch.nn.Module):
     losses['tot'] = 0
     for head in opt.heads:
       losses['tot'] += opt.weights[head] * losses[head]
-    
+
     return losses['tot'], losses
 
 
