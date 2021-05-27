@@ -153,6 +153,43 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
   return heatmap
 
+def gaussian_ellipse_2d(shape, sigma=1):
+  grid = np.zeros(shape)
+  center_x, center_y = int(shape[0]/2), int(shape[1]/2)
+  max_radius = max(shape[0], shape[1])
+  x_modifier = shape[0] / max_radius
+  y_modifier = shape[1] / max_radius
+
+  for x, line in enumerate(grid):
+    for y, value in enumerate(line):
+      value = (((x - center_x)*y_modifier)**2 + ((y-center_y)*x_modifier)**2) / (2*sigma**2)
+      grid[x, y] = np.exp(-value)
+
+  return grid
+
+def draw_ellipse_gaussian(heatmap, center, radius_x, radius_y, k=1):
+  x, y = int(center[0]), int(center[1])
+  height, width = heatmap.shape[0:2]
+  left, right = min(x, radius_x), min(width - x, radius_x + 1)
+  top, bottom = min(y, radius_y), min(height - y, radius_y + 1)
+
+  gaussian = gaussian_ellipse_2d((2*radius_y + 1, 2*radius_x + 1), sigma=((2 * min(radius_x, radius_y) + 1) / 6))
+
+  masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+  masked_gaussian = gaussian[ radius_y - top:radius_y + bottom, radius_x - left:radius_x + right,]
+  if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:  # TODO debug
+    np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
+
+  return heatmap
+
+def draw_gaussian(heatmap, center, radius, h, w, opt, k=1):
+  if opt.elliptical_gt:
+    radius_x = radius if h > w else int(radius * (w / h))
+    radius_y = radius if w >= h else int(radius * (h / w))
+    draw_ellipse_gaussian(heatmap, center, radius_x, radius_y)
+  else:
+    draw_umich_gaussian(heatmap, center, radius)
+
 def draw_dense_reg(regmap, heatmap, center, value, radius, is_offset=False):
   diameter = 2 * radius + 1
   gaussian = gaussian2D((diameter, diameter), sigma=diameter / 6)

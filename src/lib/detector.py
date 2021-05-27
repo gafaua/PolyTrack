@@ -14,7 +14,7 @@ from model.model import create_model, load_model
 from model.decode import generic_decode
 from model.utils import flip_tensor, flip_lr_off, flip_lr
 from utils.image import get_affine_transform, affine_transform
-from utils.image import draw_umich_gaussian, gaussian_radius
+from utils.image import draw_umich_gaussian, gaussian_radius, draw_gaussian
 from utils.post_process import generic_post_process
 from utils.debugger import Debugger
 from utils.tracker import Tracker
@@ -275,7 +275,8 @@ class Detector(object):
           [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
         ct_int = ct.astype(np.int32)
         if with_hm:
-          draw_umich_gaussian(input_hm[0], ct_int, radius)
+          #draw_umich_gaussian(input_hm[0], ct_int, radius)
+          draw_gaussian(input_hm[0], ct_int, radius, h, w, self.opt)
         ct_out = np.array(
           [(bbox_out[0] + bbox_out[2]) / 2, 
            (bbox_out[1] + bbox_out[3]) / 2], dtype=np.int32)

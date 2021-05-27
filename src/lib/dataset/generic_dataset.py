@@ -15,7 +15,7 @@ import torch.utils.data as data
 
 from utils.image import flip, color_aug
 from utils.image import get_affine_transform, affine_transform
-from utils.image import gaussian_radius, draw_umich_gaussian
+from utils.image import gaussian_radius, draw_umich_gaussian, draw_gaussian
 import copy
 
 class GenericDataset(data.Dataset):
@@ -242,7 +242,7 @@ class GenericDataset(data.Dataset):
 
         track_ids.append(ann['track_id'] if 'track_id' in ann else -1)
         if reutrn_hm:
-          draw_umich_gaussian(pre_hm[0], ct_int, radius, k=conf)
+          draw_gaussian(pre_hm[0], ct_int, radius, h, w, self.opt, k=conf)
 
         if np.random.random() < self.opt.fp_disturb and reutrn_hm:
           ct2 = ct0.copy()
@@ -250,7 +250,7 @@ class GenericDataset(data.Dataset):
           ct2[0] = ct2[0] + np.random.randn() * 0.05 * w
           ct2[1] = ct2[1] + np.random.randn() * 0.05 * h 
           ct2_int = ct2.astype(np.int32)
-          draw_umich_gaussian(pre_hm[0], ct2_int, radius, k=conf)
+          draw_gaussian(pre_hm[0], ct2_int, radius, h, w, self.opt, k=conf)
 
     return pre_hm, pre_cts, track_ids
 
@@ -474,7 +474,8 @@ class GenericDataset(data.Dataset):
     ret['ind'][k] = ct_int[1] * self.opt.output_w + ct_int[0]
     ret['reg'][k] = ct - ct_int
     ret['reg_mask'][k] = 1
-    draw_umich_gaussian(ret['hm'][cls_id - 1], ct_int, radius)
+    #draw_umich_gaussian(ret['hm'][cls_id - 1], ct_int, radius)
+    draw_gaussian(ret['hm'][cls_id - 1], ct_int, radius, h, w, self.opt)
 
     gt_det['bboxes'].append(
       np.array([ct[0] - w / 2, ct[1] - h / 2,

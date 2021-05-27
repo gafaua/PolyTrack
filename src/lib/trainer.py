@@ -50,7 +50,7 @@ class GenericLoss(torch.nn.Module):
         losses['hm'] += self.crit(
           output['hm'], batch['hm'], batch['ind'], 
           batch['mask'], batch['cat']) / opt.num_stacks
-
+      # TODO verify if this is ok with the masks used
       regression_heads = [
         'reg', 'wh', 'tracking', 'ltrb', 'ltrb_amodal', 'hps', 
         'dep', 'dim', 'amodel_offset', 'velocity', 'poly', 'pseudo_depth']
