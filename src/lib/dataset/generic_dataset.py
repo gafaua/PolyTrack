@@ -433,8 +433,7 @@ class GenericDataset(data.Dataset):
     h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
     if h <= 0 or w <= 0:
       return
-    # TODO change this gaussian radius to elliptical
-    # TODO change ct for center of mass based on polys
+
     radius = gaussian_radius((math.ceil(h), math.ceil(w)))
     radius = max(0, int(radius))
 
@@ -451,7 +450,7 @@ class GenericDataset(data.Dataset):
           poly[i] = np.clip(poly[i], 0, self.opt.output_w - 1)
           poly[i+1] = np.clip(poly[i+1], 0, self.opt.output_h - 1)
 
-        ret['poly_mask'][k] = 1 # TODO find out why this is done
+        ret['poly_mask'][k] = 1
         ret['poly'][k] = poly
         gt_det['poly'].append(ret['poly'][k] )
 

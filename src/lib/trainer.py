@@ -17,7 +17,6 @@ from model.utils import _sigmoid, flip_tensor, flip_lr_off, flip_lr
 from utils.debugger import Debugger
 from utils.post_process import generic_post_process
 
-#TODO ADD LOSSES FOR POLYDET
 class GenericLoss(torch.nn.Module):
   def __init__(self, opt):
     super(GenericLoss, self).__init__()
@@ -50,7 +49,7 @@ class GenericLoss(torch.nn.Module):
         losses['hm'] += self.crit(
           output['hm'], batch['hm'], batch['ind'], 
           batch['mask'], batch['cat']) / opt.num_stacks
-      # TODO verify if this is ok with the masks used
+
       regression_heads = [
         'reg', 'wh', 'tracking', 'ltrb', 'ltrb_amodal', 'hps', 
         'dep', 'dim', 'amodel_offset', 'velocity', 'poly', 'pseudo_depth']
