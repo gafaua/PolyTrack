@@ -19,8 +19,8 @@ anns = json.load(open(anno_file, 'r'))
 image_to_boxes = {}
 for ann in anns['annotations']:
     gt = {'cat_id': ann['category_id']}
-    gt['depth'] = ann['depth']
-    gt['polygon'] = ann['polygon']
+    gt['pseudo_depth'] = ann['pseudo_depth']
+    gt['poly'] = ann['poly']
 
     if id_to_file[ann['image_id']] in image_to_boxes:
         image_to_boxes[id_to_file[ann['image_id']]].append(gt)
@@ -32,8 +32,8 @@ for key in sorted(image_to_boxes):
     im = Image.open(os.path.join(base_dir, key))
     depth_map = Image.fromarray(np.ones((im.size[1], im.size[0])) * 255)
     depths = []
-    for poly in sorted(image_to_boxes[key], key=lambda x: x['depth'], reverse=True):
-        depth = float(poly['depth'])
+    for poly in sorted(image_to_boxes[key], key=lambda x: x['pseudo_depth'], reverse=True):
+        depth = float(poly['pseudo_depth'])
         depths.append(depth)
         label = int(poly['cat_id'])
         ec = (0, 149, 255, 100)
@@ -44,15 +44,15 @@ for key in sorted(image_to_boxes):
 
         # print(poly['polygon'])
         points = []
-        for i in range(len(poly['polygon'])):
-            points.append((poly['polygon'][i][0], poly['polygon'][i][1]))
+        for i in range(len(poly['poly'])):
+            points.append((poly['poly'][i][0], poly['poly'][i][1]))
         ImageDraw.Draw(im, 'RGBA').polygon(points, outline=0, fill=ec)
 
-    for poly in sorted(image_to_boxes[key], key=lambda x: x['depth'], reverse=True):
-        depth = float(poly['depth'])
+    for poly in sorted(image_to_boxes[key], key=lambda x: x['pseudo_depth'], reverse=True):
+        depth = float(poly['pseudo_depth'])
         points = []
-        for i in range(len(poly['polygon'])):
-            points.append((poly['polygon'][i][0], poly['polygon'][i][1]))
+        for i in range(len(poly['poly'])):
+            points.append((poly['poly'][i][0], poly['poly'][i][1]))
         depth_color = (depth-np.min(depths)) / np.max(depths) * 255
         ImageDraw.Draw(depth_map).polygon(points, outline=0, fill=depth_color)
 
