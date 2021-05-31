@@ -310,13 +310,13 @@ class GenericDataset(data.Dataset):
 
       if self.opt.velocity and 'velocity' in anns[k]:
         anns[k]['velocity'] = [-10000, -10000, -10000]
-    
+      #POLYDET
       if 'poly' in self.opt.heads and 'poly' in anns[k]:
         poly = anns[k]['poly']
         for i in range(0, len(poly), 2):
           poly[i] = width - poly[i] - 1
         anns[k]['poly'] = poly
-
+      #END POLYDET
     return anns
 
 
