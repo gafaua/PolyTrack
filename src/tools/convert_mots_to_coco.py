@@ -8,9 +8,10 @@ import polygon_tools
 # Use the same script for MOT16
 # DATA_PATH = '../../data/mot16/'
 # DATA_PATH = '../../data/mot17/'
-DATA_PATH = '/store/datasets/MOTS/'
+DATA_PATH = '../../data/MOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['test', 'train']
+NBR_VERTICES = 16
 
 if __name__ == '__main__':
   for split in SPLITS:
@@ -81,7 +82,7 @@ if __name__ == '__main__':
 
           # find polygon from mask
           binary_mask = rletools.decode(mask)
-          polygon = polygon_tools.mask_to_polygon(binary_mask, bbox=[x, y, x+w, y+h], nbr_vertices=32)
+          polygon = polygon_tools.mask_to_polygon(binary_mask, bbox=[x, y, x+w, y+h], nbr_vertices=NBR_VERTICES)
 
           ann = {'id': ann_cnt,
                  'category_id': category_id,
@@ -96,6 +97,7 @@ if __name__ == '__main__':
     print('loaded {} for {} images and {} samples'.format(
       split, len(out['images']), len(out['annotations'])))
     json.dump(out, open(out_path, 'w'), indent=1)
+    print('wrote json {} file in {}'.format(split, out_path))
         
         
 

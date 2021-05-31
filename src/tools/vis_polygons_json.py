@@ -8,8 +8,8 @@ import os
 import json
 import cv2
 
-base_dir = '/store/datasets/MOTS/train'
-anno_file = '/store/datasets/MOTS/json_gt/train.json'
+base_dir = '../../data/MOTS/train'
+anno_file = '../../data/MOTS/json_gt/train.json'
 anno = json.load(open(anno_file, 'r'))
 id_to_file = {}
 for image in anno['images']:
