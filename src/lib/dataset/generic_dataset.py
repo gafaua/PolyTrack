@@ -312,6 +312,7 @@ class GenericDataset(data.Dataset):
         anns[k]['velocity'] = [-10000, -10000, -10000]
       #POLYDET
       if 'poly' in self.opt.heads and 'poly' in anns[k]:
+        #print(anns[k])
         poly = anns[k]['poly']
         for i in range(0, len(poly), 2):
           poly[i] = width - poly[i] - 1
@@ -324,7 +325,6 @@ class GenericDataset(data.Dataset):
     inp = cv2.warpAffine(img, trans_input, 
                         (self.opt.input_w, self.opt.input_h),
                         flags=cv2.INTER_LINEAR)
-    
     inp = (inp.astype(np.float32) / 255.)
     if self.split == 'train' and not self.opt.no_color_aug:
       color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)

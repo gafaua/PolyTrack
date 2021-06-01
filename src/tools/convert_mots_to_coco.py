@@ -11,7 +11,7 @@ import polygon_tools
 DATA_PATH = '../../data/MOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['test', 'train']
-NBR_VERTICES = 16
+NBR_VERTICES = 32
 
 if __name__ == '__main__':
   for split in SPLITS:
@@ -83,6 +83,7 @@ if __name__ == '__main__':
           # find polygon from mask
           binary_mask = rletools.decode(mask)
           polygon = polygon_tools.mask_to_polygon(binary_mask, bbox=[x, y, x+w, y+h], nbr_vertices=NBR_VERTICES)
+          polygon = np.reshape(polygon, NBR_VERTICES * 2).tolist()
 
           ann = {'id': ann_cnt,
                  'category_id': category_id,

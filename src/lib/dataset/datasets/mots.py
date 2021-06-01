@@ -7,11 +7,12 @@ class MOTS(GenericDataset):
   default_resolution = [544, 960]
   class_name = ['pedestrian']
   max_objs = 256
+  cat_ids = {2:1}
 
   def __init__(self, opt, split):
     # TODO handle eval split
     data_dir = os.path.join(opt.data_dir, 'MOTS')
-    ann_path = os.path.join(data_dir, 'json_gt', '{}_{}'.format(split, opt.nbr_points))
+    ann_path = os.path.join(data_dir, 'json_gt', '{}_{}.json'.format(split, opt.nbr_points))
     img_dir = os.path.join(data_dir, split)
 
     print('Using MOTS with {} points polys'.format(opt.nbr_points))
@@ -22,6 +23,9 @@ class MOTS(GenericDataset):
     self.num_samples = len(self.images)
     print('Loaded MOTS {} {} samples'.format(split, self.num_samples))
   
+  def __len__(self):
+    return self.num_samples
+
   def save_results(self, results, save_dir):
     # TODO save results to text file
     ...
