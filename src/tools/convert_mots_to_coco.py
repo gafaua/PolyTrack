@@ -16,7 +16,7 @@ NBR_VERTICES = 16
 if __name__ == '__main__':
   for split in SPLITS:
     data_path = DATA_PATH + split
-    out_path = OUT_PATH + '{}.json'.format(split)
+    out_path = OUT_PATH + '{}_{}.json'.format(split, NBR_VERTICES)
     out = {'images': [], 'annotations': [], 
            'categories': [{'id': 1, 'name': 'pedestrian'}],
            'videos': []}
@@ -89,8 +89,8 @@ if __name__ == '__main__':
                  'image_id': image_cnt + frame_id,
                  'track_id': track_id,
                  'bbox': [x, y, w, h],
-                 'polygon': polygon,
-                 'depth': depth,
+                 'poly': polygon,
+                 'pseudo_depth': depth,
                  'conf': 1}
           out['annotations'].append(ann)
       image_cnt += num_images
