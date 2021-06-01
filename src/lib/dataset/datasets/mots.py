@@ -9,6 +9,7 @@ class MOTS(GenericDataset):
   max_objs = 256
 
   def __init__(self, opt, split):
+    # TODO handle eval split
     data_dir = os.path.join(opt.data_dir, 'MOTS')
     ann_path = os.path.join(data_dir, 'json_gt', '{}_{}'.format(split, opt.nbr_points))
     img_dir = os.path.join(data_dir, split)
@@ -20,3 +21,12 @@ class MOTS(GenericDataset):
 
     self.num_samples = len(self.images)
     print('Loaded MOTS {} {} samples'.format(split, self.num_samples))
+  
+  def save_results(self, results, save_dir):
+    # TODO save results to text file
+    ...
+
+  def run_eval(self, results, save_dir):
+    # TODO run a eval_MOTS_Challenge, get this from the
+    # MOTS challenge github dev toolkit
+    ...
