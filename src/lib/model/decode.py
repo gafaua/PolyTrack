@@ -147,7 +147,7 @@ def generic_decode(output, K=100, opt=None):
     polys[..., 0::2] += xs
     polys[..., 1::2] += ys
 
-    ret['polys'] = polys
+    ret['poly'] = polys
 
     # Get bounding boxes from polygons
 

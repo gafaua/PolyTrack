@@ -9,7 +9,7 @@ from trainer import Trainer
 
 
 import torch
-import time
+import os
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -23,6 +23,10 @@ def test(opt):
     print("Creating model...")
     model = create_model(opt.arch, opt.heads, opt.head_conv, opt=opt)
     optimizer = torch.optim.Adam(model.parameters(), opt.lr)
+    if opt.load_model != '':
+      model, optimizer, start_epoch = load_model(
+        model, opt.load_model, opt, optimizer)
+
     trainer = Trainer(opt, model, optimizer)
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
@@ -37,8 +41,13 @@ def test(opt):
 
     print(f"DataLoader created with batch_size: {opt.batch_size}")
     print("Training 1 epoch...")
+    tot = 5
+    for epoch in range(tot):
+      trainer.train(epoch, train_loader)
+      save_model(os.path.join(opt.save_dir, 'model_last.pth'), 
+            epoch, model, optimizer)
 
-    trainer.trainer(1, train_loader)
+    print("Done!")
 
     # for batch in train_loader:
     #     print(batch.keys())
@@ -54,14 +63,16 @@ def test(opt):
     #     hm = (batch['hm'][0].numpy().transpose(1,2,0) * 255.).astype(np.uint8)
     #     im = add_polys_to_image(im, batch['poly'][0]*4)
         
-    #     hm = cv2.resize(hm, (im.shape[:2][1], im.shape[:2][0]))
-    #     cv2.imshow('hm', hm)
-    #     cv2.imshow('polys', im)
+    #     im = cv2.resize(im, (hm.shape[:2][1], hm.shape[:2][0]))
+    #     hmpolys = np.hstack((im, cv2.cvtColor(hm, cv2.COLOR_GRAY2RGB)))
+    #     cv2.imshow('hm', hmpolys)
+    #     #cv2.imshow('polys', im)
     #     # cv2.imshow('polys', im)
     #     cv2.waitKey(10000)
-        #print(batch['poly'])
-        #time.sleep(10)
-        # python testing.py tracking,polydet --pre_hm --elliptical_gt
+    #     #print(batch['poly'])
+    #     #time.sleep(10)
+    #     # python testing.py tracking,polydet --pre_hm --elliptical_gt
+
 
 
 

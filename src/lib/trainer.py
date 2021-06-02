@@ -183,7 +183,7 @@ class Trainer(object):
   def _get_losses(self, opt):
     loss_order = ['hm', 'wh', 'reg', 'ltrb', 'hps', 'hm_hp', \
       'hp_offset', 'dep', 'dim', 'rot', 'amodel_offset', \
-      'ltrb_amodal', 'tracking', 'nuscenes_att', 'velocity']
+      'ltrb_amodal', 'tracking', 'nuscenes_att', 'velocity', 'poly', 'pseudo_depth']
     loss_states = ['tot'] + [k for k in loss_order if k in opt.heads]
     loss = GenericLoss(opt)
     return loss_states, loss
@@ -228,6 +228,10 @@ class Trainer(object):
           debugger.add_coco_bbox(
             dets['bboxes'][i, k] * opt.down_ratio, dets['clses'][i, k],
             dets['scores'][i, k], img_id='out_pred')
+          
+          if 'poly' in opt.heads:
+            debugger.add_poly(dets['poly'][i][k] * opt.down_ratio,
+            img_id='out_pred' )
 
           if 'ltrb_amodal' in opt.heads:
             debugger.add_coco_bbox(
@@ -253,6 +257,11 @@ class Trainer(object):
           debugger.add_coco_bbox(
             dets_gt['bboxes'][i][k] * opt.down_ratio, dets_gt['clses'][i][k],
             dets_gt['scores'][i][k], img_id='out_gt')
+
+          if 'poly' in opt.heads:
+            debugger.add_poly(dets_gt['poly'][i][k] * opt.down_ratio,
+            dets_gt['cts'][i][k] * opt.down_ratio,
+            img_id='out_gt' )
 
           if 'ltrb_amodal' in opt.heads:
             debugger.add_coco_bbox(

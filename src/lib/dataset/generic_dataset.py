@@ -444,15 +444,10 @@ class GenericDataset(data.Dataset):
     if 'poly' in self.opt.heads:
       if 'poly' in ann:
         poly = np.array(ann['poly'], dtype=np.float32)
-        #TODO test if those transforms actually work.
         for i in range(0, len(poly), 2):
           poly[i], poly[i+1] = affine_transform([poly[i], poly[i+1]], trans_output)
           poly[i] = np.clip(poly[i], 0, self.opt.output_w - 1)
           poly[i+1] = np.clip(poly[i+1], 0, self.opt.output_h - 1)
-
-        ret['poly_mask'][k] = 1
-        ret['poly'][k] = poly
-        gt_det['poly'].append(ret['poly'][k] )
 
         # Define ct as center of mass
         mass_cx, mass_cy = 0, 0
@@ -461,6 +456,14 @@ class GenericDataset(data.Dataset):
           mass_cy += poly[i+1]
         ct[0] = mass_cx / (len(poly)/2)
         ct[1] = mass_cy / (len(poly)/2)
+
+        for i in range(0, len(poly), 2):
+          ret['poly'][k][i] = poly[i] - ct[0]
+          ret['poly'][k][i+1] = poly[i+1] - ct[1]
+
+        ret['poly_mask'][k] = 1
+        gt_det['poly'].append(ret['poly'][k] )
+
       else:
         gt_det['poly'].append(np.zeros(self.opt.nbr_points * 2, dtype=np.float32))
     # End PolyDet

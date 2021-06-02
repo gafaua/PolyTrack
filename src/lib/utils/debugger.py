@@ -9,6 +9,7 @@ import time
 import numpy as np
 import cv2
 from .ddd_utils import compute_box_3d, project_to_image, draw_box_3d
+from PIL import Image, ImageDraw
 
 
 class Debugger(object):
@@ -116,6 +117,16 @@ class Debugger(object):
   def _get_rand_color(self):
     c = ((np.random.random((3)) * 0.6 + 0.2) * 255).astype(np.int32).tolist()
     return c
+
+  def add_poly(self, poly, ct=[0.0,0.0], img_id='default'):
+    c = (255, 255, 0, 80)
+    im = Image.fromarray(self.imgs[img_id])
+    points = [(poly[i] + ct[0], poly[i+1] + ct[1]) for i in range(0, len(poly), 2)]
+    ImageDraw.Draw(im, 'RGBA').polygon(points, outline=0, fill=c)
+
+    self.imgs[img_id] = np.array(im)
+
+
 
   def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True, 
     no_bbox=False, img_id='default'): 
