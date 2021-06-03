@@ -17,9 +17,17 @@ if __name__ == '__main__':
   for split in SPLITS:
     data_path = DATA_PATH + split
     out_path = OUT_PATH + '{}_{}.json'.format(split, NBR_VERTICES)
-    out = {'images': [], 'annotations': [], 
+    out = {'images': [], 'annotations': [],
            'categories': [{'id': 1, 'name': 'pedestrian'}],
            'videos': []}
+    if split == 'train':
+        out_full = {'images': [], 'annotations': [],
+               'categories': [{'id': 1, 'name': 'pedestrian'}],
+               'videos': []}
+        out_val = {'images': [], 'annotations': [],
+               'categories': [{'id': 1, 'name': 'pedestrian'}],
+               'videos': []}
+
     seqs = os.listdir(data_path)
     image_cnt = 0
     ann_cnt = 0
@@ -93,12 +101,21 @@ if __name__ == '__main__':
                  'poly': polygon,
                  'pseudo_depth': depth,
                  'conf': 1}
-          out['annotations'].append(ann)
+          
+          out_full['annotations'].append(ann)
+          if 'MOTS20-09' not in img_path:
+            out['annotations'].append(ann)
+          else:
+            out_val['annotations'].append(ann)
+
       image_cnt += num_images
     print('loaded {} for {} images and {} samples'.format(
       split, len(out['images']), len(out['annotations'])))
-    json.dump(out, open(out_path, 'w'), indent=1)
-    print('wrote json {} file in {}'.format(split, out_path))
-        
-        
 
+    json.dump(out, open(out_path, 'w'), indent=1)
+    
+    if split == 'train':
+      json.dump(out_full, open(out_path.replace('train', 'train_full'), 'w'), indent=1)
+      json.dump(out_val, open(out_path.replace('train', 'train_val'), 'w'), indent=1)
+
+    print('wrote json {} file in {}'.format(split, out_path))
