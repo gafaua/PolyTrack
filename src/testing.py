@@ -39,9 +39,9 @@ def test(opt):
       num_workers=opt.num_workers, pin_memory=True, drop_last=True
     )
 
+    tot = 10
     print(f"DataLoader created with batch_size: {opt.batch_size}")
-    print("Training 1 epoch...")
-    tot = 5
+    print(f"Training {tot} epoch...")
     for epoch in range(tot):
       trainer.train(epoch, train_loader)
       save_model(os.path.join(opt.save_dir, 'model_last.pth'), 
