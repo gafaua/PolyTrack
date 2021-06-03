@@ -17,16 +17,16 @@ if __name__ == '__main__':
   for split in SPLITS:
     data_path = DATA_PATH + split
     out_path = OUT_PATH + '{}_{}.json'.format(split, NBR_VERTICES)
-    out = {'images': [], 'annotations': [],
+    out_full = {'images': [], 'annotations': [],
            'categories': [{'id': 1, 'name': 'pedestrian'}],
            'videos': []}
     if split == 'train':
-        out_full = {'images': [], 'annotations': [],
-               'categories': [{'id': 1, 'name': 'pedestrian'}],
-               'videos': []}
-        out_val = {'images': [], 'annotations': [],
-               'categories': [{'id': 1, 'name': 'pedestrian'}],
-               'videos': []}
+      out_train = {'images': [], 'annotations': [],
+              'categories': [{'id': 1, 'name': 'pedestrian'}],
+              'videos': []}
+      out_val = {'images': [], 'annotations': [],
+              'categories': [{'id': 1, 'name': 'pedestrian'}],
+              'videos': []}
 
     seqs = os.listdir(data_path)
     image_cnt = 0
@@ -34,9 +34,20 @@ if __name__ == '__main__':
     video_cnt = 0
     for seq in sorted(seqs):
       video_cnt += 1
-      out['videos'].append({
+      out_full['videos'].append({
         'id': video_cnt,
         'file_name': seq})
+      
+      if split == 'train':
+        if 'MOTS20-09' in seq:
+          out_val['videos'].append({
+            'id': video_cnt,
+            'file_name': seq})
+        else:
+          out_train['videos'].append({
+            'id': video_cnt,
+            'file_name': seq})
+
       seq_path = '{}/{}/'.format(data_path, seq)
       img_path = seq_path + 'img1/'
       ann_path = seq_path + 'gt/gt.txt'
@@ -54,9 +65,17 @@ if __name__ == '__main__':
                       'next_image_id': \
                         image_cnt + i + 2 if i < num_images - 1 else -1,
                       'video_id': video_cnt}
-        out['images'].append(image_info)
+
+        out_full['images'].append(image_info)
+
+        if split == 'train':
+          if 'MOTS20-09' in seq:
+            out_val['images'].append(image_info)
+          else:
+            out_train['images'].append(image_info)
+
       print('{}: {} images'.format(seq, num_images))
-      if split != 'test':
+      if split == 'train':
         # anns = np.loadtxt(ann_path, dtype=np.float32, delimiter=',')
         anns = np.loadtxt(ann_path, dtype=str, delimiter=',')
 
@@ -103,19 +122,21 @@ if __name__ == '__main__':
                  'conf': 1}
           
           out_full['annotations'].append(ann)
-          if 'MOTS20-09' not in img_path:
-            out['annotations'].append(ann)
-          else:
+
+          if 'MOTS20-09' in img_path:
             out_val['annotations'].append(ann)
+          else:
+            out_train['annotations'].append(ann)
 
       image_cnt += num_images
     print('loaded {} for {} images and {} samples'.format(
-      split, len(out['images']), len(out['annotations'])))
+      split, len(out_full['images']), len(out_full['annotations'])))
 
-    json.dump(out, open(out_path, 'w'), indent=1)
-    
     if split == 'train':
       json.dump(out_full, open(out_path.replace('train', 'train_full'), 'w'), indent=1)
+      json.dump(out_train, open(out_path, 'w'), indent=1)
       json.dump(out_val, open(out_path.replace('train', 'train_val'), 'w'), indent=1)
-
-    print('wrote json {} file in {}'.format(split, out_path))
+    else:
+      json.dump(out_full, open(out_path, 'w'), indent=1)
+    
+    print(f'Json files were generated for {split}')
