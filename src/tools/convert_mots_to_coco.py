@@ -11,7 +11,7 @@ import polygon_tools
 DATA_PATH = '../../data/MOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['test', 'train']
-NBR_VERTICES = 32
+NBR_VERTICES = 16
 
 if __name__ == '__main__':
   for split in SPLITS:
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     if split == 'train':
       json.dump(out_full, open(out_path.replace('train', 'train_full'), 'w'), indent=1)
       json.dump(out_train, open(out_path, 'w'), indent=1)
-      json.dump(out_val, open(out_path.replace('train', 'train_val'), 'w'), indent=1)
+      json.dump(out_val, open(out_path.replace('train', 'val'), 'w'), indent=1)
     else:
       json.dump(out_full, open(out_path, 'w'), indent=1)
     
