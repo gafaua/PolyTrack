@@ -49,9 +49,9 @@ def generic_post_process(
         item['bbox'] = bbox
 
       # PolyDet
-      if 'polys' in dets:
+      if 'poly' in dets:
         poly = transform_preds_with_trans(
-        dets['polys'][i][j].reshape(opt.nbr_points, 2), trans).reshape(opt.nbr_points*2)
+        dets['poly'][i][j].reshape(opt.nbr_points, 2), trans).reshape(opt.nbr_points*2)
         item['poly'] = poly
       if 'pseudo_depth' in dets:
         item['pseudo_depth'] = dets['pseudo_depth'][i][j]

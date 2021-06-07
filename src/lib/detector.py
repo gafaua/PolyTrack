@@ -157,7 +157,7 @@ class Detector(object):
 
     show_results_time = time.time()
     display_time += show_results_time - end_time
-    
+
     # return results and run time
     ret = {'results': results, 'tot': tot_time, 'load': load_time,
             'pre': pre_time, 'net': net_time, 'dec': dec_time,

@@ -111,6 +111,7 @@ class Tracker(object):
           ret.append(track)
     
     for i in unmatched_tracks:
+    # TODO modify this to make use of the polygons/masks generated
       track = self.tracks[i]
       if track['age'] < self.opt.max_age:
         track['age'] += 1

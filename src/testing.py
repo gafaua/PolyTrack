@@ -4,7 +4,7 @@ import _init_paths
 from dataset.dataset_factory import dataset_factory
 from opts import opts
 from model.model import create_model, load_model, save_model
-from tools.vis_polygons_json import add_polys_to_image
+#from tools.vis_polygons_json import add_polys_to_image
 from trainer import Trainer
 
 
@@ -39,7 +39,7 @@ def test(opt):
       num_workers=opt.num_workers, pin_memory=True, drop_last=True
     )
 
-    tot = 10
+    tot = 1
     print(f"DataLoader created with batch_size: {opt.batch_size}")
     print(f"Training {tot} epoch...")
     for epoch in range(tot):
