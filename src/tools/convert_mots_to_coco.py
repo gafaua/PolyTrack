@@ -11,7 +11,7 @@ import polygon_tools
 DATA_PATH = '../../data/MOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['test', 'train']
-NBR_VERTICES = 16
+NBR_VERTICES = 32
 
 if __name__ == '__main__':
   for split in SPLITS:
@@ -34,19 +34,17 @@ if __name__ == '__main__':
     video_cnt = 0
     for seq in sorted(seqs):
       video_cnt += 1
-      out_full['videos'].append({
+      video = {
         'id': video_cnt,
-        'file_name': seq})
+        'file_name': seq,
+        }
+      out_full['videos'].append(video)
       
       if split == 'train':
         if 'MOTS20-09' in seq:
-          out_val['videos'].append({
-            'id': video_cnt,
-            'file_name': seq})
+          out_val['videos'].append(video)
         else:
-          out_train['videos'].append({
-            'id': video_cnt,
-            'file_name': seq})
+          out_train['videos'].append(video)
 
       seq_path = '{}/{}/'.format(data_path, seq)
       img_path = seq_path + 'img1/'
@@ -65,6 +63,12 @@ if __name__ == '__main__':
                       'next_image_id': \
                         image_cnt + i + 2 if i < num_images - 1 else -1,
                       'video_id': video_cnt}
+        
+        if 'height' not in video:
+            first_img = cv2.imread(os.path.join(data_path, image_info['file_name']))
+            height, width = first_img.shape[:2]
+            video['height'] = height
+            video['width'] = width
 
         out_full['images'].append(image_info)
 
@@ -139,4 +143,4 @@ if __name__ == '__main__':
     else:
       json.dump(out_full, open(out_path, 'w'), indent=1)
     
-    print(f'Json files were generated for {split}')
+    print(f'Json files were generated for {split} with {NBR_VERTICES} vertices')
