@@ -223,6 +223,9 @@ class Trainer(object):
         debugger.add_img(img, img_id='out_pred_amodal')
         debugger.add_img(img, img_id='out_gt_amodal')
 
+      if 'pseudo_depth' in opt.heads:
+        depths = dets['pseudo_depth'][i]
+
       # Predictions
       for k in range(len(dets['scores'][i])):
         if dets['scores'][i, k] > opt.vis_thresh:
@@ -231,7 +234,10 @@ class Trainer(object):
             dets['scores'][i, k], img_id='out_pred')
           
           if 'poly' in opt.heads:
-            debugger.add_poly(dets['poly'][i][k] * opt.down_ratio,
+            depth = dets['pseudo_depth'][i][k]
+            c = (depth-np.min(depths)) / np.max(depths) * 255
+            c = (0, 0, c, 190)
+            debugger.add_poly(dets['poly'][i][k] * opt.down_ratio, c=c,
             img_id='out_pred' )
 
           if 'ltrb_amodal' in opt.heads:

@@ -1,4 +1,9 @@
+# TODO add proper citations
+# author = {Paul Voigtlaender and Michael Krause and Aljo\u{s}a O\u{s}ep and Jonathon Luiten and Berin Balachandar Gnana Sekar and Andreas Geiger and Bastian Leibe}
+# Modified by Gaspar Faure
+
 import sys, os
+import argparse
 sys.path.append(os.path.abspath(os.getcwd()))
 import math
 from collections import defaultdict
@@ -7,7 +12,16 @@ from Evaluator import Evaluator, run_metrics
 
 import multiprocessing as mp
 
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
+    parser.add_argument('--benchmark_name', type=str, default='MOTS')
+    parser.add_argument('--gt_dir', type=str, default='data/MOTS', help='Directory containing ground truth files.')
+    parser.add_argument('--res_dir', type=str, default='res/MOTSres', help='Directory containing result files.')
+    parser.add_argument('--seqmaps_dir', type=str, default='seqmaps', help='Directory containing txt file containing sequences to eval')
+    parser.add_argument('--eval_mode', type=str, default='train', help='Can be [train | test | all]')
+
+    return parser.parse_args()
 
 class MOTS_evaluator(Evaluator):
 	def __init__(self):
@@ -39,13 +53,16 @@ class MOTS_evaluator(Evaluator):
 
 
 if __name__ == "__main__":
+	args = parse_args()
 	eval = MOTS_evaluator()
-	benchmark_name = "MOTS"
-	gt_dir = "data/MOTS"
-	res_dir = "res/MOTSres"
-	eval_mode = "train"
+	benchmark_name = args.benchmark_name
+	gt_dir = args.gt_dir
+	res_dir = args.res_dir
+	eval_mode = args.eval_mode
+	seqmaps_dir = args.seqmaps_dir
 	eval.run(
 	         benchmark_name = benchmark_name,
 	         gt_dir = gt_dir,
 	         res_dir = res_dir,
-	         eval_mode = eval_mode)
+	         eval_mode = eval_mode,
+			 seqmaps_dir = seqmaps_dir)

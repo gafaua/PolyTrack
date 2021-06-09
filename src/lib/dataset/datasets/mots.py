@@ -1,5 +1,6 @@
 import os
 import pycocotools.mask as rletools
+import numpy as np
 from ..generic_dataset import GenericDataset
 
 class MOTS(GenericDataset):
@@ -34,8 +35,7 @@ class MOTS(GenericDataset):
     return self.num_samples
 
   def save_results(self, results, save_dir):
-    # TODO save results to text file, convert polygons to masks
-    results_dir = os.path.join(save_dir, 'results_mots{}'.format(self.dataset_version))
+    results_dir = save_dir
     if not os.path.exists(results_dir):
       os.mkdir(results_dir)
 
@@ -51,6 +51,7 @@ class MOTS(GenericDataset):
             continue
           result = results[image_info['id']]
           frame_id = image_info['frame_id']
+          tracks_in_frame = []
 
           for item in result:
             if not ('tracking_id' in item):
@@ -59,14 +60,43 @@ class MOTS(GenericDataset):
               continue
             cat_id = 2 #result['class'] only pedestrians in MOTS
             tracking_id = item['tracking_id']
+            rle_mask = rletools.frPyObjects([item['poly']], height, width)[0]
+            track_id = f'{cat_id}{tracking_id:03}'
 
-            rle_mask = rletools.frPyObjects([item['poly']], height, width)[0]['counts'].decode(encoding='UTF-8')
-            f.write(f'{frame_id} {cat_id}{tracking_id:03} {cat_id} {height} {width} {rle_mask}\n')
+            tracks_in_frame.append({
+              'track_id': track_id,
+              'cat_id': cat_id,
+              'mask': rle_mask,
+              'pseudo_depth': item['pseudo_depth']
+            })
+
+          if len(tracks_in_frame) > 1:
+            # make sure no masks overlap in the same frame
+            merged = np.ones((height,width), dtype=np.float) * -1
+            tracks_in_frame.sort(key=lambda x: x['pseudo_depth'])
+
+            for i, track in enumerate(tracks_in_frame):
+              binary_mask = rletools.decode(track['mask'])
+              merged *= np.logical_not(binary_mask)
+              merged += binary_mask * i
+            
+            for i, track in enumerate(tracks_in_frame):
+              binary_mask = merged == i
+              track['mask'] = rletools.encode(np.asfortranarray(binary_mask))
+
+          for track in tracks_in_frame:
+            # write line to file
+            track_id = track['track_id']
+            cat_id = track['cat_id']
+            rle_mask = track['mask']['counts'].decode(encoding='UTF-8')
+
+            f.write(f'{frame_id} {track_id} {cat_id} {height} {width} {rle_mask}\n')
 
   def run_eval(self, results, save_dir):
+    save_dir = os.path.join(save_dir, 'results_mots_{}'.format(self.dataset_version))
     print(f'Saving results in {save_dir}')
     self.save_results(results, save_dir)
     print('Running eval...')
-    print('TODO do eval!')
-    # TODO run a eval_MOTS_Challenge, get this from the
-    # MOTS challenge github dev toolkit
+    gt_dir = os.path.join(self.opt.data_dir, 'MOTS')
+    seqmaps_dir = os.path.join(gt_dir, 'seqmaps')
+    os.system(f'python tools/MOTS/evalMOTS.py --gt_dir {gt_dir} --res_dir {save_dir} --seqmaps_dir {seqmaps_dir}')

@@ -118,8 +118,7 @@ class Debugger(object):
     c = ((np.random.random((3)) * 0.6 + 0.2) * 255).astype(np.int32).tolist()
     return c
 
-  def add_poly(self, poly, ct=[0.0,0.0], img_id='default'):
-    c = (255, 255, 0, 80)
+  def add_poly(self, poly, ct=[0.0,0.0], c = (255, 255, 0, 80), img_id='default'):
     im = Image.fromarray(self.imgs[img_id])
     points = [(poly[i] + ct[0], poly[i+1] + ct[1]) for i in range(0, len(poly), 2)]
     ImageDraw.Draw(im, 'RGBA').polygon(points, outline=0, fill=c)
