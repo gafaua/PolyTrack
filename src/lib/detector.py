@@ -407,6 +407,9 @@ class Detector(object):
         img_id='previous')
       self.pre_image_ori = image
     
+    if len(results) > 0 and 'pseudo_depth' in results[0]:
+      depths = [item['pseudo_depth'] for item in results if item['score'] > self.opt.vis_thresh]
+
     for j in range(len(results)):
       if results[j]['score'] > self.opt.vis_thresh:
         if 'active' in results[j] and results[j]['active'] == 0:
@@ -420,6 +423,12 @@ class Detector(object):
           debugger.add_coco_bbox(
             item['bbox'], item['class'] - 1, sc, img_id='generic')
 
+        if 'poly' in item:
+          c = (item['pseudo_depth']-np.min(depths)) / np.max(depths) * 255
+          c = (c, 255, c, 150)
+          debugger.add_poly(item['poly'], c=c, img_id='generic')
+
+        # TODO Add pseudo depth information
         if 'tracking' in item:
           debugger.add_arrow(item['ct'], item['tracking'], img_id='generic')
         

@@ -29,7 +29,7 @@ class MOTS(GenericDataset):
     super().__init__(opt=opt, split=split, ann_path=ann_path, img_dir=img_dir)
 
     self.num_samples = len(self.images)
-    print('Loaded MOTS/{} {} {} samples'.format(opt.dataset_version, split, self.num_samples))
+    print('Loaded MOTS/{} - {} set with {} samples'.format(opt.dataset_version, split, self.num_samples))
   
   def __len__(self):
     return self.num_samples

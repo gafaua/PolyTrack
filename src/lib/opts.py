@@ -255,7 +255,7 @@ class opts(object):
     self.parser.add_argument('--custom_dataset_ann_path', default='')
 
     # polydet
-    self.parser.add_argument('--poly_weight', type=float, default=0.1,
+    self.parser.add_argument('--poly_weight', type=float, default=1,
                              help='loss weight for polygons points.')
     self.parser.add_argument('--depth_weight', type=float, default=0.1,
                              help='loss weight for pseudo depth.')
@@ -413,7 +413,7 @@ class opts(object):
     default_dataset_info = {
       'ctdet': 'coco', 'multi_pose': 'coco_hp', 'ddd': 'nuscenes',
       'tracking,ctdet': 'coco', 'tracking,multi_pose': 'coco_hp', 
-      'tracking,ddd': 'nuscenes'
+      'tracking,ddd': 'nuscenes', 'tracking,polydet': 'mots'
     }
     opt = self.parse()
     from dataset.dataset_factory import dataset_factory

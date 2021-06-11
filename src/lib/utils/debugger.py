@@ -125,8 +125,6 @@ class Debugger(object):
 
     self.imgs[img_id] = np.array(im)
 
-
-
   def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True, 
     no_bbox=False, img_id='default'): 
     if self.opt.show_track_color:
