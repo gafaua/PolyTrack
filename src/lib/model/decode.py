@@ -99,6 +99,7 @@ def generic_decode(output, K=100, opt=None):
   cts = torch.cat([xs0.unsqueeze(2), ys0.unsqueeze(2)], dim=2)
   ret = {'scores': scores, 'clses': clses.float(), 
          'xs': xs0, 'ys': ys0, 'cts': cts}
+  print('SCORES\n',scores)
   if 'reg' in output:
     reg = output['reg']
     reg = _tranpose_and_gather_feat(reg, inds)

@@ -136,8 +136,8 @@ class Trainer(object):
     avg_loss_stats = {l: AverageMeter() for l in self.loss_stats \
                       if l == 'tot' or opt.weights[l] > 0}
     num_iters = len(data_loader) if opt.num_iters < 0 else opt.num_iters
-    #bar = Bar('{}/{}'.format(opt.task, opt.exp_id), max=num_iters)
-    bar = Bar('{}'.format(opt.exp_id), max=num_iters)
+    bar = Bar('{}/{}'.format(opt.task, opt.exp_id), max=num_iters)
+    #bar = Bar('{}'.format(opt.exp_id), max=num_iters)
     end = time.time()
     for iter_id, batch in enumerate(data_loader):
       if iter_id >= num_iters:
@@ -236,7 +236,7 @@ class Trainer(object):
           if 'poly' in opt.heads:
             depth = dets['pseudo_depth'][i][k]
             c = (depth-np.min(depths)) / np.max(depths) * 255
-            c = (0, 0, c, 190)
+            c = (c, 255, c, 190)
             debugger.add_poly(dets['poly'][i][k] * opt.down_ratio, c=c,
             img_id='out_pred' )
 
