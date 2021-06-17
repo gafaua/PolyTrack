@@ -64,6 +64,7 @@ def main(opt):
       num_workers=opt.num_workers, pin_memory=True, drop_last=True
   )
 
+  best_val_loss = float('inf')
   print('Starting training...')
   for epoch in range(start_epoch + 1, opt.num_epochs + 1):
     mark = epoch if opt.save_all else 'last'
@@ -79,6 +80,12 @@ def main(opt):
         log_dict_val, preds = trainer.val(epoch, val_loader)
         if opt.eval_val:
           val_loader.dataset.run_eval(preds, opt.save_dir)
+
+      if log_dict_val['tot'] < best_val_loss :
+        best_val_loss = log_dict_val['tot']
+        save_model(os.path.join(opt.save_dir, 'model_best.pth'), 
+                 epoch, model, optimizer)
+
       for k, v in log_dict_val.items():
         logger.scalar_summary('val_{}'.format(k), v, epoch)
         logger.write('{} {:8f} | '.format(k, v))
