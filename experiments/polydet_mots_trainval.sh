@@ -7,7 +7,7 @@ python main.py tracking,polydet \
 --val_intervals 2 --num_epochs 100 \
 --hm_disturb 0.05 --lost_disturb 0.5 --fp_disturb 0.1 \
 --pre_hm --same_aug --elliptical_gt --nbr_points 32 \
---lr_step 45,70
+--lr_step 45,70 \
 --batch_size 8 \
 
 # Testing
