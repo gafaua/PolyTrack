@@ -2,6 +2,7 @@ import os
 import pycocotools.mask as rletools
 import numpy as np
 from ..generic_dataset import GenericDataset
+from progress.bar import Bar
 
 class MOTS(GenericDataset):
   num_categories = 1
@@ -46,7 +47,8 @@ class MOTS(GenericDataset):
       height, width = video['height'], video['width']
       with open(out_path, 'w') as f:
         images = self.video_to_images[video_id]
-        for image_info in sorted(images, key=lambda x: x['frame_id']):
+        bar = Bar(f'Saving tracking results of {file_name}', max=len(images))
+        for j, image_info in enumerate(sorted(images, key=lambda x: x['frame_id'])):
           if not (image_info['id'] in results):
             continue
           result = results[image_info['id']]
@@ -92,11 +94,15 @@ class MOTS(GenericDataset):
 
             f.write(f'{frame_id} {track_id} {cat_id} {height} {width} {rle_mask}\n')
 
+          Bar.suffix = f'[{j}/{len(images)}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td} |Tracks: {len(tracks_in_frame)}'
+          bar.next()
+
+
   def run_eval(self, results, save_dir):
     save_dir = os.path.join(save_dir, 'results_mots_{}'.format(self.dataset_version))
     print(f'Saving results in {save_dir}')
     self.save_results(results, save_dir)
-    print('Running eval...')
+    print('\nRunning eval...')
     gt_dir = os.path.join(self.opt.data_dir, 'MOTS')
     seqmaps_dir = os.path.join(gt_dir, 'seqmaps')
     os.system(f'python tools/MOTS/evalMOTS.py --gt_dir {gt_dir} --res_dir {save_dir} --seqmaps_dir {seqmaps_dir}')

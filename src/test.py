@@ -79,7 +79,8 @@ def prefetch_test(opt):
   results = {}
   num_iters = len(data_loader) if opt.num_iters < 0 else opt.num_iters
   bar = Bar('{}'.format(opt.exp_id), max=num_iters)
-  time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge', 'track']
+  #time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge', 'track']
+  time_stats = ['tot', 'pre', 'net', 'dec', 'track']
   avg_time_stats = {t: AverageMeter() for t in time_stats}
   if opt.use_loaded_results:
     for img_id in data_loader.dataset.images:
@@ -116,6 +117,9 @@ def prefetch_test(opt):
       avg_time_stats[t].update(ret[t])
       Bar.suffix = Bar.suffix + '|{} {tm.val:.3f}s ({tm.avg:.3f}s) '.format(
         t, tm = avg_time_stats[t])
+    val_fps, avg_fps = round(1/avg_time_stats['tot'].val), round(1/avg_time_stats['tot'].avg)
+    Bar.suffix = Bar.suffix + f'|fps: {val_fps} ({avg_fps}) '
+
     if opt.print_iter > 0:
       if ind % opt.print_iter == 0:
         print('{}/{}| {}'.format(opt.task, opt.exp_id, Bar.suffix))
