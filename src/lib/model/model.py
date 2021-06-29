@@ -12,6 +12,7 @@ from .networks.resdcn import PoseResDCN
 from .networks.resnet import PoseResNet
 from .networks.dlav0 import DLASegv0
 from .networks.generic_network import GenericNetwork
+from .networks.hourglass import GetHourglass
 
 # TODO ADD POLYDET_DLA?
 _network_factory = {
@@ -19,7 +20,8 @@ _network_factory = {
   'dla': DLASeg,
   'res': PoseResNet,
   'dlav0': DLASegv0,
-  'generic': GenericNetwork
+  'generic': GenericNetwork,
+  'hourglass': GetHourglass
 }
 
 def create_model(arch, head, head_conv, opt=None):

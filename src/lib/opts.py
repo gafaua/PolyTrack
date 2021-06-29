@@ -266,6 +266,9 @@ class opts(object):
                              help='use elliptical gaussians to train '
                                   'keypoint heatmaps.')
 
+    self.parser.add_argument('--one_stack', action='store_true',
+                             help='force using only one stack for the '
+                             'hourglass arch')
 
   def parse(self, args=''):
     if args == '':
@@ -308,7 +311,7 @@ class opts(object):
       opt.head_conv = 256 if 'dla' in opt.arch else 64
 
     opt.pad = 127 if 'hourglass' in opt.arch else 31
-    opt.num_stacks = 2 if opt.arch == 'hourglass' else 1
+    opt.num_stacks = 2 if opt.arch == 'hourglass' and not opt.one_stack else 1
 
     if opt.master_batch_size == -1:
       opt.master_batch_size = opt.batch_size // len(opt.gpus)
@@ -348,6 +351,11 @@ class opts(object):
     input_w = opt.input_res if opt.input_res > 0 else input_w
     opt.input_h = opt.input_h if opt.input_h > 0 else input_h
     opt.input_w = opt.input_w if opt.input_w > 0 else input_w
+
+    if opt.arch == 'hourglass':
+      opt.input_h = (opt.input_h | 127) + 1
+      opt.input_w = (opt.input_w | 127) + 1
+
     opt.output_h = opt.input_h // opt.down_ratio
     opt.output_w = opt.input_w // opt.down_ratio
     opt.input_res = max(opt.input_h, opt.input_w)
