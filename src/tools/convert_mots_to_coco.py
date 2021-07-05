@@ -12,6 +12,7 @@ DATA_PATH = '../../data/MOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['test', 'train']
 NBR_VERTICES = 32
+VAL_SEQ = 'MOTS20-09'
 
 if __name__ == '__main__':
   for split in SPLITS:
@@ -41,7 +42,7 @@ if __name__ == '__main__':
       out_full['videos'].append(video)
       
       if split == 'train':
-        if 'MOTS20-09' in seq:
+        if VAL_SEQ in seq:
           out_val['videos'].append(video)
         else:
           out_train['videos'].append(video)
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         out_full['images'].append(image_info)
 
         if split == 'train':
-          if 'MOTS20-09' in seq:
+          if VAL_SEQ in seq:
             out_val['images'].append(image_info)
           else:
             out_train['images'].append(image_info)
@@ -127,7 +128,7 @@ if __name__ == '__main__':
           
           out_full['annotations'].append(ann)
 
-          if 'MOTS20-09' in img_path:
+          if VAL_SEQ in img_path:
             out_val['annotations'].append(ann)
           else:
             out_train['annotations'].append(ann)

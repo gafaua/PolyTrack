@@ -6,7 +6,8 @@ from progress.bar import Bar
 
 class MOTS(GenericDataset):
   num_categories = 1
-  default_resolution = [544, 960]
+  default_resolution = [510, 895]
+  # default_resolution = [544, 960]
   class_name = ['pedestrian']
   max_objs = 256
   cat_ids = {2:1}

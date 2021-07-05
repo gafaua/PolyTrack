@@ -1,32 +1,25 @@
 # ------------------------------------------------------------------------------
-# This code is base on
+# This code is base on 
 # CornerNet (https://github.com/princeton-vl/CornerNet)
 # Copyright (c) 2018, University of Michigan
 # Licensed under the BSD 3-Clause License
 # ------------------------------------------------------------------------------
 
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .base_model import BaseModel
+class convolution(nn.Module):
+    def __init__(self, k, inp_dim, out_dim, stride=1, with_bn=True):
+        super(convolution, self).__init__()
 
-BN_MOMENTUM = 0.1
-
-class ConvBlock(nn.Module):
-    """
-    Conv2D -> BatchNorm2D (if with_bn=True) -> ReLU\n
-    Padding is handled to keep outputs WxH the same as inputs WxH
-    """
-    def __init__(self, kernel, inp_dim, out_dim, stride=1, with_bn=True):
-        super(ConvBlock, self).__init__()
-
-        pad = (kernel - 1) // 2
-        self.conv = nn.Conv2d(inp_dim, out_dim, kernel, padding=(pad, pad), stride=(stride, stride), bias=not with_bn)
+        pad = (k - 1) // 2
+        self.conv = nn.Conv2d(inp_dim, out_dim, (k, k), padding=(pad, pad), stride=(stride, stride), bias=not with_bn)
         self.bn   = nn.BatchNorm2d(out_dim) if with_bn else nn.Sequential()
         self.relu = nn.ReLU(inplace=True)
 
@@ -36,9 +29,9 @@ class ConvBlock(nn.Module):
         relu = self.relu(bn)
         return relu
 
-class Residual(nn.Module):
+class residual(nn.Module):
     def __init__(self, k, inp_dim, out_dim, stride=1, with_bn=True):
-        super(Residual, self).__init__()
+        super(residual, self).__init__()
 
         self.conv1 = nn.Conv2d(inp_dim, out_dim, (3, 3), padding=(1, 1), stride=(stride, stride), bias=False)
         self.bn1   = nn.BatchNorm2d(out_dim)
@@ -46,7 +39,7 @@ class Residual(nn.Module):
 
         self.conv2 = nn.Conv2d(out_dim, out_dim, (3, 3), padding=(1, 1), bias=False)
         self.bn2   = nn.BatchNorm2d(out_dim)
-
+        
         self.skip  = nn.Sequential(
             nn.Conv2d(inp_dim, out_dim, (1, 1), stride=(stride, stride), bias=False),
             nn.BatchNorm2d(out_dim)
@@ -64,171 +57,240 @@ class Residual(nn.Module):
         skip  = self.skip(x)
         return self.relu(bn2 + skip)
 
-def make_layer(kernel, inp_dim, out_dim, modules, layer=ConvBlock):
-    layers  = [layer(kernel, inp_dim, out_dim)]
-    layers += [layer(kernel, out_dim, out_dim) for _ in range(modules - 1)]
-
+def make_layer(k, inp_dim, out_dim, modules, layer=convolution, **kwargs):
+    layers = [layer(k, inp_dim, out_dim, **kwargs)]
+    for _ in range(1, modules):
+        layers.append(layer(k, out_dim, out_dim, **kwargs))
     return nn.Sequential(*layers)
 
-def make_hg_layer(kernel, inp_dim, out_dim, modules, layer=ConvBlock):
-    layers  = [layer(kernel, inp_dim, out_dim, stride=2)]
-    layers += [layer(kernel, out_dim, out_dim) for _ in range(modules - 1)]
-
+def make_layer_revr(k, inp_dim, out_dim, modules, layer=convolution, **kwargs):
+    layers = []
+    for _ in range(modules - 1):
+        layers.append(layer(k, inp_dim, inp_dim, **kwargs))
+    layers.append(layer(k, inp_dim, out_dim, **kwargs))
     return nn.Sequential(*layers)
 
-def make_layer_revr(kernel, inp_dim, out_dim, modules, layer=ConvBlock):
-    layers = [layer(kernel, inp_dim, inp_dim) for _ in range(modules - 1)]
-    layers.append(layer(kernel, inp_dim, out_dim))
+class MergeUp(nn.Module):
+    def forward(self, up1, up2):
+        return up1 + up2
 
-    return nn.Sequential(*layers)
+def make_merge_layer(dim):
+    return MergeUp()
 
-def make_base_layer(inp_dim, out_dim):
+# def make_pool_layer(dim):
+#     return nn.MaxPool2d(kernel_size=2, stride=2)
+
+def make_pool_layer(dim):
+    return nn.Sequential()
+
+def make_unpool_layer(dim):
+    return nn.Upsample(scale_factor=2)
+
+def make_kp_layer(cnv_dim, curr_dim, out_dim):
     return nn.Sequential(
-        nn.Conv2d(inp_dim, out_dim, kernel_size=7, stride=1, padding=3, bias=False),
-        nn.BatchNorm2d(out_dim, momentum=BN_MOMENTUM),
-        nn.ReLU(inplace=True)
+        convolution(3, cnv_dim, curr_dim, with_bn=False),
+        nn.Conv2d(curr_dim, out_dim, (1, 1))
     )
 
-def make_base_layer(inp_dim, out_dim):
-    return nn.Sequential(
-        ConvBlock(7, inp_dim, 128, stride=2),
-        Residual(3, 128, out_dim, stride=2)
-    )
+def make_inter_layer(dim):
+    return residual(3, dim, dim)
 
-# def make_base_layer(inp_dim, out_dim):
-#     return nn.Sequential(
-#         nn.Conv2d(inp_dim, out_dim, kernel_size=7, stride=1, padding=3, bias=False),
-#         nn.BatchNorm2d(out_dim, momentum=BN_MOMENTUM),
-#         nn.ReLU(inplace=True)
-#     )
+def make_cnv_layer(inp_dim, out_dim):
+    return convolution(3, inp_dim, out_dim)
 
-
-class HourglassModule(nn.Module):
+class kp_module(nn.Module):
     def __init__(
-        self, n, dims, modules, layer=Residual,
+        self, n, dims, modules, layer=residual,
+        make_up_layer=make_layer, make_low_layer=make_layer,
+        make_hg_layer=make_layer, make_hg_layer_revr=make_layer_revr,
+        make_pool_layer=make_pool_layer, make_unpool_layer=make_unpool_layer,
+        make_merge_layer=make_merge_layer, **kwargs
     ):
-        super(HourglassModule, self).__init__()
+        super(kp_module, self).__init__()
 
-        curr_mod, next_mod = modules[:2]
-        curr_dim, next_dim = dims[:2]
+        self.n   = n
 
-        self.up1  = make_layer(3, curr_dim, curr_dim, curr_mod, layer=layer)
+        curr_mod = modules[0]
+        next_mod = modules[1]
 
-        self.low1 = make_hg_layer(3, curr_dim, next_dim, curr_mod, layer=layer)
+        curr_dim = dims[0]
+        next_dim = dims[1]
 
-        self.low2 = \
-        HourglassModule(n - 1, dims[1:], modules[1:], layer=layer) \
-        if n > 1 else \
-        make_layer(3, next_dim, next_dim, next_mod, layer=layer)
+        self.up1  = make_up_layer(
+            3, curr_dim, curr_dim, curr_mod, 
+            layer=layer, **kwargs
+        )  
+        #self.max1 = make_pool_layer(curr_dim)
+        self.low1 = make_hg_layer(
+            3, curr_dim, next_dim, curr_mod,
+            layer=layer, **kwargs
+        )
+        self.low2 = kp_module(
+            n - 1, dims[1:], modules[1:], layer=layer, 
+            make_up_layer=make_up_layer, 
+            make_low_layer=make_low_layer,
+            make_hg_layer=make_hg_layer,
+            make_hg_layer_revr=make_hg_layer_revr,
+            make_pool_layer=make_pool_layer,
+            make_unpool_layer=make_unpool_layer,
+            make_merge_layer=make_merge_layer,
+            **kwargs
+        ) if self.n > 1 else \
+        make_low_layer(
+            3, next_dim, next_dim, next_mod,
+            layer=layer, **kwargs
+        )
+        self.low3 = make_hg_layer_revr(
+            3, next_dim, curr_dim, curr_mod,
+            layer=layer, **kwargs
+        )
+        self.up2  = make_unpool_layer(curr_dim)
 
-        self.low3 = make_layer_revr(3, next_dim, curr_dim, curr_mod, layer=layer)
-
-        self.up2  = nn.Upsample(scale_factor=2)
+        self.merge = make_merge_layer(curr_dim)
 
     def forward(self, x):
-        # print('AVANT: ', x.shape)
         up1  = self.up1(x)
+        #max1 = self.max1(x)
         low1 = self.low1(x)
         low2 = self.low2(low1)
         low3 = self.low3(low2)
         up2  = self.up2(low3)
-        # print('APRÈS: ', up1.shape)
-        return up1 + up2
+        return self.merge(up1, up2)
 
+class exkp(nn.Module):
+    def __init__(
+        self, n, nstack, dims, modules, heads, pre=None, cnv_dim=256, 
+        make_tl_layer=None, make_br_layer=None,
+        make_cnv_layer=make_cnv_layer, make_heat_layer=make_kp_layer,
+        make_tag_layer=make_kp_layer, make_regr_layer=make_kp_layer,
+        make_up_layer=make_layer, make_low_layer=make_layer, 
+        make_hg_layer=make_layer, make_hg_layer_revr=make_layer_revr,
+        make_pool_layer=make_pool_layer, make_unpool_layer=make_unpool_layer,
+        make_merge_layer=make_merge_layer, make_inter_layer=make_inter_layer, 
+        kp_layer=residual
+    ):
+        super(exkp, self).__init__()
 
-class HourglassNetwork(nn.Module):
-    def __init__(self, dims, modules, num_stacks):
-        super(HourglassNetwork, self).__init__()
-        assert len(dims) == len(modules)
+        self.nstack    = nstack
+        self.heads     = heads
 
-        n = len(dims) - 1
+        curr_dim = dims[0]
 
-        self.num_stacks = num_stacks
-        
-        dim = dims[0] # == cnv_dim
+        self.pre = nn.Sequential(
+            convolution(7, 3, 128, stride=2),
+            residual(3, 128, 256, stride=2)
+        ) if pre is None else pre
 
-        self.hg_stacks = nn.ModuleList([
-            nn.Sequential(
-                HourglassModule(n, dims, modules),
-                ConvBlock(3, dim, dim)
-            )
-            for _ in range(num_stacks)
+        self.pre_img = nn.Sequential(
+            convolution(7, 3, 128, stride=2),
+            residual(3, 128, 256, stride=2)
+        )
+        self.pre_hm = nn.Sequential(
+            convolution(7, 1, 128, stride=2),
+            residual(3, 128, 256, stride=2)
+        )
+
+        self.kps  = nn.ModuleList([
+            kp_module(
+                n, dims, modules, layer=kp_layer,
+                make_up_layer=make_up_layer,
+                make_low_layer=make_low_layer,
+                make_hg_layer=make_hg_layer,
+                make_hg_layer_revr=make_hg_layer_revr,
+                make_pool_layer=make_pool_layer,
+                make_unpool_layer=make_unpool_layer,
+                make_merge_layer=make_merge_layer
+            ) for _ in range(nstack)
+        ])
+        self.cnvs = nn.ModuleList([
+            make_cnv_layer(curr_dim, cnv_dim) for _ in range(nstack)
         ])
 
         self.inters = nn.ModuleList([
-            Residual(3, dim, dim)
-            for _ in range(num_stacks - 1)
+            make_inter_layer(curr_dim) for _ in range(nstack - 1)
         ])
 
         self.inters_ = nn.ModuleList([
-            nn.ModuleList([
-                nn.Sequential(
-                    nn.Conv2d(dim, dim, (1, 1), bias=False),
-                    nn.BatchNorm2d(dim)
-                ),
-                nn.Sequential(
-                    nn.Conv2d(dim, dim, (1, 1), bias=False),
-                    nn.BatchNorm2d(dim)
-                )])
-            for _ in range(num_stacks - 1)
+            nn.Sequential(
+                nn.Conv2d(curr_dim, curr_dim, (1, 1), bias=False),
+                nn.BatchNorm2d(curr_dim)
+            ) for _ in range(nstack - 1)
         ])
+        self.cnvs_   = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv2d(cnv_dim, curr_dim, (1, 1), bias=False),
+                nn.BatchNorm2d(curr_dim)
+            ) for _ in range(nstack - 1)
+        ])
+
+        ## keypoint heatmaps
+        for head in heads.keys():
+            if 'hm' in head:
+                module =  nn.ModuleList([
+                    make_heat_layer(
+                        cnv_dim, curr_dim, heads[head]) for _ in range(nstack)
+                ])
+                self.__setattr__(head, module)
+                for heat in self.__getattr__(head):
+                    heat[-1].bias.data.fill_(-2.19)
+            else:
+                module = nn.ModuleList([
+                    make_regr_layer(
+                        cnv_dim, curr_dim, heads[head]) for _ in range(nstack)
+                ])
+                self.__setattr__(head, module)
+
 
         self.relu = nn.ReLU(inplace=True)
 
+    def forward(self, image, pre_img, pre_hm):
+        # print('image shape', image.shape)
+        inter = self.pre(image) + self.pre_img(pre_img) + self.pre_hm(pre_hm)
+        outs  = []
 
-    def forward(self, x):
-        outs = []
+        for ind in range(self.nstack):
+            kp_, cnv_  = self.kps[ind], self.cnvs[ind]
+            kp  = kp_(inter)
+            cnv = cnv_(kp)
 
-        for i in range(self.num_stacks):
-            feats = self.hg_stacks[i](x)
+            out = {}
+            for head in self.heads:
+                layer = self.__getattr__(head)[ind]
+                y = layer(cnv)
+                out[head] = y
             
-            outs.append(feats)
-            
-            if i < self.num_stacks - 1:
-                inter_x, inter_feats = self.inters_[i]
-                x = self.relu(inter_x(x) + inter_feats(feats))
-                x = self.inters[i](x)
-
+            outs.append(out)
+            if ind < self.nstack - 1:
+                inter = self.inters_[ind](inter) + self.cnvs_[ind](cnv)
+                inter = self.relu(inter)
+                inter = self.inters[ind](inter)
         return outs
 
 
-class Hourglass(BaseModel):
-    def __init__(self, heads, head_convs, opt):
-        self.opt = opt
+def make_hg_layer(kernel, dim0, dim1, mod, layer=convolution, **kwargs):
+    layers  = [layer(kernel, dim0, dim1, stride=2)]
+    layers += [layer(kernel, dim1, dim1) for _ in range(mod - 1)]
+    return nn.Sequential(*layers)
 
-        num_stacks = opt.num_stacks
-        # TODO make these parameters?
+
+class HourglassNet(exkp):
+    def __init__(self, heads, num_stacks=2):
+        n       = 5
         dims    = [256, 256, 384, 384, 384, 512]
         modules = [2, 2, 2, 2, 2, 4]
 
-        super(Hourglass, self).__init__(
-            heads, head_convs, num_stacks, dims[0], opt=opt)
+        super(HourglassNet, self).__init__(
+            n, num_stacks, dims, modules, heads,
+            make_tl_layer=None,
+            make_br_layer=None,
+            make_pool_layer=make_pool_layer,
+            make_hg_layer=make_hg_layer,
+            kp_layer=residual, cnv_dim=256
+        )
 
-        # TODO create functions for different stacks
-        self.hg = HourglassNetwork(dims, modules, num_stacks)
-
-        if opt.pre_img:
-            self.pre_img_layer = make_base_layer(3, dims[0])
-            
-        if opt.pre_hm:
-            self.pre_hm_layer = make_base_layer(1, dims[0])
-
-        self.pre = self.base_layer = make_base_layer(3, dims[0])
-
-    def img2feats(self, x):
-        x = self.pre(x)
-
-        return self.hg(x)
-    
-    def imgpre2feats(self, x, pre_img=None, pre_hm=None):
-        x = self.pre(x)
-
-        if pre_img is not None:
-            x = x + self.pre_img_layer(pre_img)
-        if pre_hm  is not None:
-            x = x + self.pre_hm_layer(pre_hm)
-        
-        return self.hg(x)
+# def get_large_hourglass_net(num_layers, heads, head_conv):
+#   model = HourglassNet(heads, num_layers)
+#   return model
 
 def GetHourglass(num_layers, heads, head_convs, opt):
-    return Hourglass(heads, head_convs, opt)
+    return HourglassNet(heads, num_stacks=opt.num_stacks)

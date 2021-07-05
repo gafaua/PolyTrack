@@ -7,6 +7,7 @@ import os
 
 import torch
 import torch.utils.data
+import datetime
 from opts import opts
 from model.model import create_model, load_model, save_model
 from model.data_parallel import DataParallel
@@ -65,6 +66,7 @@ def main(opt):
   )
 
   best_val_loss = float('inf')
+  start_time = datetime.datetime.now()
   print('Starting training...')
   for epoch in range(start_epoch + 1, opt.num_epochs + 1):
     mark = epoch if opt.save_all else 'last'
@@ -102,6 +104,8 @@ def main(opt):
       for param_group in optimizer.param_groups:
           param_group['lr'] = lr
   logger.close()
+  time_elapsed = datetime.datetime.now() - start_time
+  print(f"Training done. Training time: {time_elapsed}")
 
 if __name__ == '__main__':
   opt = opts().parse()
