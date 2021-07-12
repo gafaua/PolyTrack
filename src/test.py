@@ -17,12 +17,15 @@ from logger import Logger
 from utils.utils import AverageMeter
 from dataset.dataset_factory import dataset_factory
 from detector import Detector
+from utils.image import affine_transform
 
 
 class PrefetchDataset(torch.utils.data.Dataset):
   def __init__(self, opt, dataset, pre_process_func):
     self.images = dataset.images
-    self.load_image_func = dataset.coco.loadImgs
+    #self.load_image_func = dataset.coco.loadImgs
+    self.load_img_anns = lambda img_id: dataset._load_image_anns(img_id, dataset.coco, dataset.img_dir)
+    self.cat_ids = dataset.cat_ids
     self.img_dir = dataset.img_dir
     self.pre_process_func = pre_process_func
     self.get_default_calib = dataset.get_default_calib
@@ -30,9 +33,7 @@ class PrefetchDataset(torch.utils.data.Dataset):
   
   def __getitem__(self, index):
     img_id = self.images[index]
-    img_info = self.load_image_func(ids=[img_id])[0]
-    img_path = os.path.join(self.img_dir, img_info['file_name'])
-    image = cv2.imread(img_path)
+    image, anns, img_info, img_path = self.load_img_anns(img_id)
     images, meta = {}, {}
     for scale in opt.test_scales:
       input_meta = {}
@@ -41,6 +42,32 @@ class PrefetchDataset(torch.utils.data.Dataset):
       input_meta['calib'] = calib
       images[scale], meta[scale] = self.pre_process_func(
         image, scale, input_meta)
+      
+      if self.opt.gt_centers and 'trans_output' in meta[scale]:
+        trans_output = meta[scale]['trans_output']
+        cts = [[] for _ in range(len(self.cat_ids))]
+        for ann in anns:        
+          ct = np.array([-1,-1], dtype=np.float32)
+          # TODO handle when no poly in anns (get cts with bbox)
+          if 'poly' in ann:
+            poly = np.array(ann['poly'], dtype=np.float32)
+            for i in range(0, len(poly), 2):
+              poly[i], poly[i+1] = affine_transform([poly[i], poly[i+1]], trans_output)
+              poly[i] = np.clip(poly[i], 0, self.opt.output_w - 1)
+              poly[i+1] = np.clip(poly[i+1], 0, self.opt.output_h - 1)
+
+            # Define ct as center of mass
+            mass_cx, mass_cy = 0, 0
+            for i in range(0, len(poly), 2):
+              mass_cx += poly[i]
+              mass_cy += poly[i+1]
+            ct[0] = mass_cx / (len(poly)/2)
+            ct[1] = mass_cy / (len(poly)/2)
+            cls_id = int(self.cat_ids[ann['category_id']])
+            
+            cts[cls_id - 1].append(ct.astype(np.int32))
+        meta[scale].update({'cts': cts})
+
     ret = {'images': images, 'image': image, 'meta': meta}
     if 'frame_id' in img_info and img_info['frame_id'] == 1:
       ret['is_first_frame'] = 1

@@ -9,19 +9,16 @@ import numpy as np
 from progress.bar import Bar
 from ..generic_dataset import GenericDataset
 
-class MOTS(GenericDataset):
-  num_categories = 1
-  default_resolution = [510, 895]
-  # default_resolution = [544, 960]
-  class_name = ['pedestrian']
-  max_objs = 256
-  cat_ids = {2:1}
-
+class KITTIMOTS(GenericDataset):
+  num_categories = 2
+  default_resolution = [384, 1280]
+  class_name = ['Car', 'Pedestrian']
+  cat_ids = {1:1, 2:2}
+  max_objs = 50
   def __init__(self, opt, split):
-    self.dataset_version = opt.dataset_version
+    data_dir = os.path.join(opt.data_dir, 'KITTIMOTS')
 
-    data_dir = os.path.join(opt.data_dir, 'MOTS')
-    img_dir = os.path.join(data_dir, 'test' if split == 'test' else 'train')
+    img_dir = os.path.join(data_dir, split)
 
     if opt.dataset_version == 'train_val':
       ann_path = os.path.join(data_dir, 'json_gt', '{}_{}.json'.format(split, opt.nbr_points))
@@ -29,15 +26,12 @@ class MOTS(GenericDataset):
       ann_path = os.path.join(data_dir, 'json_gt', '{}_{}.json'
                  .format('train_full' if split == 'train' else 'test', opt.nbr_points))
 
-    print('Using MOTS version {} with {} points polys'.format(opt.dataset_version, opt.nbr_points))
-    print('Annotations file: {}'.format(ann_path))
-
     self.images = None
-    super().__init__(opt=opt, split=split, ann_path=ann_path, img_dir=img_dir)
-
+    super(KITTIMOTS, self).__init__(opt, split, ann_path, img_dir)
+    
     self.num_samples = len(self.images)
-    print('Loaded MOTS/{} - {} set with {} samples'.format(opt.dataset_version, split, self.num_samples))
-  
+    print('Loaded KITTIMOTS/{} - {} set with {} samples'.format(opt.dataset_version, split, self.num_samples))
+
   def __len__(self):
     return self.num_samples
 
@@ -103,12 +97,6 @@ class MOTS(GenericDataset):
           Bar.suffix = f'[{j}/{len(images)}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td} |Tracks: {len(tracks_in_frame)}'
           bar.next()
 
-
   def run_eval(self, results, save_dir):
-    save_dir = os.path.join(save_dir, 'results_mots_{}'.format(self.dataset_version))
-    print(f'Saving results in {save_dir}')
-    self.save_results(results, save_dir)
-    print('\nRunning eval...')
-    gt_dir = os.path.join(self.opt.data_dir, 'MOTS')
-    seqmaps_dir = os.path.join(gt_dir, 'seqmaps')
-    os.system(f'python tools/MOTS/evalMOTS.py --gt_dir {gt_dir} --res_dir {save_dir} --seqmaps_dir {seqmaps_dir}')
+    # TODO
+    ...

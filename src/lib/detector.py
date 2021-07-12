@@ -73,6 +73,7 @@ class Detector(object):
     load_time += (loaded_time - start_time)
     
     detections = []
+    cts = None
 
     # for multi-scale testing
     for scale in self.opt.test_scales:
@@ -84,6 +85,7 @@ class Detector(object):
         # prefetch testing
         images = pre_processed_images['images'][scale][0]
         meta = pre_processed_images['meta'][scale]
+        cts = meta.pop('cts', None)
         meta = {k: v.numpy()[0] for k, v in meta.items()}
         if 'pre_dets' in pre_processed_images['meta']:
           meta['pre_dets'] = pre_processed_images['meta']['pre_dets']
@@ -116,7 +118,7 @@ class Detector(object):
       # output: the output feature maps, only used for visualizing
       # dets: output tensors after extracting peaks
       output, dets, forward_time = self.process(
-        images, self.pre_images, pre_hms, pre_inds, return_time=True)
+        images, self.pre_images, pre_hms, pre_inds, return_time=True, cts=cts)
       net_time += forward_time - pre_process_time
       decode_time = time.time()
       dec_time += decode_time - forward_time
@@ -334,11 +336,19 @@ class Detector(object):
 
 
   def process(self, images, pre_images=None, pre_hms=None,
-    pre_inds=None, return_time=False):
+    pre_inds=None, return_time=False, cts=None):
     with torch.no_grad():
       torch.cuda.synchronize()
       output = self.model(images, pre_images, pre_hms)[-1]
       output = self._sigmoid_output(output)
+
+      if cts is not None:
+        for cat in range(len(cts)):
+          output['hm'][0][cat] *= 0
+          for ct in cts[cat]:
+            ct = ct[0]
+            output['hm'][0][cat][ct[1]][ct[0]] = 1
+
       output.update({'pre_inds': pre_inds})
       if self.opt.flip_test:
         output = self._flip_output(output)
@@ -425,7 +435,7 @@ class Detector(object):
 
         if 'poly' in item:
           c = (item['pseudo_depth']-np.min(depths)) / np.max(depths) * 255
-          c = (c, 255, c, 150)
+          c = (c, 255, c, 110)
           debugger.add_poly(item['poly'], c=c, img_id='generic')
 
         # TODO Add pseudo depth information

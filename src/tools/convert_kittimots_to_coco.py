@@ -6,28 +6,25 @@ import pycocotools.mask as rletools
 import polygon_tools
 from progress.bar import Bar
 
-# Use the same script for MOT16
-# DATA_PATH = '../../data/mot16/'
-# DATA_PATH = '../../data/mot17/'
-DATA_PATH = '../../data/MOTS/'
+DATA_PATH = '../../data/KITTIMOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
-SPLITS = ['test', 'train']
-NBR_VERTICES = 48
-VAL_SEQ = 'MOTS20-09'
+SPLITS = ['train']
+NBR_VERTICES = 32
+VAL_SEQ = ['0001', '0002', '0006', '0007']
 
 if __name__ == '__main__':
   for split in SPLITS:
     data_path = DATA_PATH + split
     out_path = OUT_PATH + '{}_{}.json'.format(split, NBR_VERTICES)
     out_full = {'images': [], 'annotations': [],
-           'categories': [{'id': 1, 'name': 'pedestrian'}],
-           'videos': []}
+              'categories': [{'id': 1, 'name': 'car'}, {'id': 2, 'name': 'pedestrian'}],
+              'videos': []}
     if split == 'train':
       out_train = {'images': [], 'annotations': [],
-              'categories': [{'id': 1, 'name': 'pedestrian'}],
+              'categories': [{'id': 1, 'name': 'car'}, {'id': 2, 'name': 'pedestrian'}],
               'videos': []}
       out_val = {'images': [], 'annotations': [],
-              'categories': [{'id': 1, 'name': 'pedestrian'}],
+              'categories': [{'id': 1, 'name': 'car'}, {'id': 2, 'name': 'pedestrian'}],
               'videos': []}
 
     seqs = os.listdir(data_path)
@@ -43,23 +40,22 @@ if __name__ == '__main__':
       out_full['videos'].append(video)
       
       if split == 'train':
-        if VAL_SEQ in seq:
+        if seq in VAL_SEQ:
           out_val['videos'].append(video)
         else:
           out_train['videos'].append(video)
 
-      seq_path = '{}/{}/'.format(data_path, seq)
-      img_path = seq_path + 'img1/'
-      ann_path = seq_path + 'gt/gt.txt'
+      img_path = os.path.join(data_path, seq)
+      ann_path = os.path.join(DATA_PATH, 'instances_txt', f'{seq}.txt')
       images = os.listdir(img_path)
-      num_images = len([image for image in images if 'jpg' in image])
+      num_images = len([image for image in images if 'png' in image])
 
       image_range = [0, num_images - 1]
 
       for i in range(num_images):
         if (i < image_range[0] or i > image_range[1]):
           continue
-        image_info = {'file_name': '{}/img1/{:06d}.jpg'.format(seq, i + 1),
+        image_info = {'file_name': '{}/{:06d}.png'.format(seq, i),
                       'id': image_cnt + i + 1,
                       'frame_id': i + 1 - image_range[0],
                       'prev_image_id': image_cnt + i if i > 0 else -1,
@@ -76,14 +72,13 @@ if __name__ == '__main__':
         out_full['images'].append(image_info)
 
         if split == 'train':
-          if VAL_SEQ in seq:
+          if seq in VAL_SEQ:
             out_val['images'].append(image_info)
           else:
             out_train['images'].append(image_info)
 
       print('{}: {} images'.format(seq, num_images))
       if split == 'train':
-        # anns = np.loadtxt(ann_path, dtype=np.float32, delimiter=',')
         anns = np.loadtxt(ann_path, dtype=str, delimiter=',')
 
         # For depth
@@ -92,6 +87,9 @@ if __name__ == '__main__':
 
         bar = Bar(f'{split}: {seq}', max=anns.shape[0])
         for i in range(anns.shape[0]):
+          Bar.suffix = f'[{i}/{anns.shape[0]}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td}'
+          bar.next()
+
           annotation = anns[i].split(' ')
           annotation = [int(item) for item in annotation[:-1]] + [annotation[-1]]
           frame_id = int(annotation[0])
@@ -131,14 +129,11 @@ if __name__ == '__main__':
           
           out_full['annotations'].append(ann)
 
-          if VAL_SEQ in img_path:
+          if seq in VAL_SEQ:
             out_val['annotations'].append(ann)
           else:
             out_train['annotations'].append(ann)
 
-          Bar.suffix = f'[{i}/{anns.shape[0]}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td}'
-          bar.next()
-        
         print()
 
       image_cnt += num_images

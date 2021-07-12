@@ -5,7 +5,7 @@ import numpy as np
 from progress.bar import Bar
 
 def generate_file():
-    num_points = 16
+    num_points = 48
 
     ann_path = f'../../data/MOTS/json_gt/val_{num_points}.json'
 

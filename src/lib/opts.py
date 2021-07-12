@@ -269,6 +269,10 @@ class opts(object):
     self.parser.add_argument('--one_stack', action='store_true',
                              help='force using only one stack for the '
                              'hourglass arch')
+    
+    self.parser.add_argument('--gt_centers', action='store_true', 
+                             help='Use ground truth centers instead of hm to'
+                             'gather features and outputs')
 
   def parse(self, args=''):
     if args == '':
