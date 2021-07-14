@@ -15,7 +15,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 def test(opt):
-    Dataset = dataset_factory['mots']
+    Dataset = dataset_factory[opt.dataset]
     opt = opts().update_dataset_info_and_set_heads(opt, Dataset)
     print(opt)
     

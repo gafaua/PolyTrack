@@ -11,14 +11,14 @@ from ..generic_dataset import GenericDataset
 
 class KITTIMOTS(GenericDataset):
   num_categories = 2
-  default_resolution = [384, 1280]
+  default_resolution = [383, 1279]
   class_name = ['Car', 'Pedestrian']
   cat_ids = {1:1, 2:2}
   max_objs = 50
   def __init__(self, opt, split):
     data_dir = os.path.join(opt.data_dir, 'KITTIMOTS')
 
-    img_dir = os.path.join(data_dir, split)
+    img_dir = os.path.join(data_dir, 'test' if split == 'test' else 'train')
 
     if opt.dataset_version == 'train_val':
       ann_path = os.path.join(data_dir, 'json_gt', '{}_{}.json'.format(split, opt.nbr_points))

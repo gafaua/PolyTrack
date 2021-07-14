@@ -21,8 +21,8 @@ def add_polys_to_image(image, polys):
     return np.array(im, dtype=np.uint8)
     
 if __name__ == '__main__':
-    base_dir = '../../data/MOTS/train'
-    anno_file = '../../data/MOTS/json_gt/train.json'
+    base_dir = '../../data/KITTIMOTS/train'
+    anno_file = '../../data/KITTIMOTS/json_gt/train_32.json'
     anno = json.load(open(anno_file, 'r'))
     id_to_file = {}
     for image in anno['images']:
@@ -64,8 +64,8 @@ if __name__ == '__main__':
         for poly in sorted(image_to_boxes[key], key=lambda x: x['pseudo_depth'], reverse=True):
             depth = float(poly['pseudo_depth'])
             points = []
-            for i in range(len(poly['poly'])):
-                points.append((poly['poly'][i][0], poly['poly'][i][1]))
+            for i in range(0, len(poly['poly']), 2):
+                points.append((poly['poly'][i], poly['poly'][i+1]))
             depth_color = (depth-np.min(depths)) / np.max(depths) * 255
             ImageDraw.Draw(depth_map).polygon(points, outline=0, fill=depth_color)
 
@@ -74,4 +74,4 @@ if __name__ == '__main__':
             os.mkdir(write_dir)
         im.save(os.path.join(write_dir, os.path.basename(key)))
         heatmap = cv2.applyColorMap(np.array(depth_map).astype(np.uint8), cv2.COLORMAP_HOT)
-        cv2.imwrite(os.path.join(write_dir, os.path.basename(key).replace('.jpg', '_depth.jpg')), heatmap)
+        cv2.imwrite(os.path.join(write_dir, os.path.basename(key).replace('.png', '_depth.png')), heatmap)
