@@ -32,7 +32,7 @@ def draw_bbox(img, bboxes, c=(255, 0, 255)):
 
 if __name__ == '__main__':
   # seqs = os.listdir(IMG_PATH)
-  seqs = ['0019']
+  seqs = ['0001']
   for seq in sorted(seqs):
     print('seq', seq)
     if '.DS_Store' in seq:
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         
         merged = np.logical_or(merged, binary_mask)
       
-      merged_mask = Image.fromarray(np.uint8(merged * 100), mode='L')
+      merged_mask = Image.fromarray(np.uint8(merged * 128), mode='L')
       color = Image.new('RGBA', (size[1], size[0]), (228, 150, 150, 255))
       # plt.imshow(merged_mask)
       # plt.imshow(img)

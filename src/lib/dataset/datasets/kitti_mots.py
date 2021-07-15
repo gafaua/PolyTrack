@@ -11,7 +11,8 @@ from ..generic_dataset import GenericDataset
 
 class KITTIMOTS(GenericDataset):
   num_categories = 2
-  default_resolution = [383, 1279]
+  default_resolution = [255, 1151] # < 256 x 1152 after padding
+  # default_resolution = [383, 1279] # < 384 x 1280 after padding 
   class_name = ['Car', 'Pedestrian']
   cat_ids = {1:1, 2:2}
   max_objs = 50
