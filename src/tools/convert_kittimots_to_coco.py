@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
           ann = {'id': ann_cnt,
                  'category_id': category_id,
-                 'image_id': image_cnt + frame_id,
+                 'image_id': image_cnt + frame_id + 1,
                  'track_id': track_id,
                  'bbox': [x, y, w, h],
                  'poly': polygon,
