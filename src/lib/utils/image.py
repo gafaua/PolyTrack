@@ -157,14 +157,12 @@ def gaussian_ellipse_2d(shape, sigma=1):
   grid = np.zeros(shape)
   center_x, center_y = int(shape[0]/2), int(shape[1]/2)
   max_radius = max(shape[0], shape[1])
-  x_modifier = shape[0] / max_radius
-  y_modifier = shape[1] / max_radius
+  x_mod, y_mod = shape[0] / max_radius, shape[1] / max_radius
+  
+  y, x = np.ogrid[-center_x:center_x+1, -center_y:center_y+1]
+  grid = np.exp(-((x * x_mod)**2 + (y *y_mod) **2) / (2 * sigma * sigma))
 
-  for x, line in enumerate(grid):
-    for y, value in enumerate(line):
-      value = (((x - center_x)*y_modifier)**2 + ((y-center_y)*x_modifier)**2) / (2*sigma**2)
-      grid[x, y] = np.exp(-value)
-
+  grid[grid < np.finfo(grid.dtype).eps * grid.max()] = 0
   return grid
 
 def draw_ellipse_gaussian(heatmap, center, radius_x, radius_y, k=1):
