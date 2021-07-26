@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
 from numba import jit
 import copy
+from .ukf_tracker import UKF_Tracker
 
 class Tracker(object):
   def __init__(self, opt):
@@ -19,6 +20,8 @@ class Tracker(object):
         if not ('ct' in item):
           bbox = item['bbox']
           item['ct'] = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
+        if self.opt.ukf:
+          item['ukf'] = UKF_Tracker(item['ct'], dt=1) # TODO pass frame rate through dt parameter
         self.tracks.append(item)
 
   def reset(self):
@@ -78,6 +81,12 @@ class Tracker(object):
       track['tracking_id'] = self.tracks[m[1]]['tracking_id']
       track['age'] = 1
       track['active'] = self.tracks[m[1]]['active'] + 1
+
+      if self.opt.ukf:
+        ukf = self.tracks[m[1]]['ukf']
+        state = ukf.update_match(track['ct'])
+        track['ukf'] = ukf
+
       ret.append(track)
 
     if self.opt.public_det and len(unmatched_dets) > 0:
@@ -108,22 +117,38 @@ class Tracker(object):
           track['tracking_id'] = self.id_count
           track['age'] = 1
           track['active'] =  1
+
+          if self.opt.ukf:
+            track['ukf'] = UKF_Tracker(track['ct'], dt=1) # TODO pass frame rate through dt parameter
+
           ret.append(track)
     
     for i in unmatched_tracks:
-    # TODO modify this to make use of the polygons/masks generated
       track = self.tracks[i]
       if track['age'] < self.opt.max_age:
         track['age'] += 1
         track['active'] = 0
         bbox = track['bbox']
         ct = track['ct']
-        v = [0, 0]
-        track['bbox'] = [
-          bbox[0] + v[0], bbox[1] + v[1],
-          bbox[2] + v[0], bbox[3] + v[1]]
-        track['ct'] = [ct[0] + v[0], ct[1] + v[1]]
+
+        if self.opt.ukf:
+          state = track['ukf'].predict()
+          track['ct'] = state[[0,3]]
+          
+          dpos = track['ct'] - ct
+          
+          track['bbox'] = [
+            bbox[0] + dpos[0], bbox[1] + dpos[1],
+            bbox[2] + dpos[0], bbox[3] + dpos[1]]
+        else:
+          # TODO delete this useless code?
+          v = [0, 0]
+          track['bbox'] = [
+            bbox[0] + v[0], bbox[1] + v[1],
+            bbox[2] + v[0], bbox[3] + v[1]]
+          track['ct'] = [ct[0] + v[0], ct[1] + v[1]]
         ret.append(track)
+  
     self.tracks = ret
     return ret
 
@@ -136,4 +161,5 @@ def greedy_assignment(dist):
     if dist[i][j] < 1e16:
       dist[:, j] = 1e18
       matched_indices.append([i, j])
+
   return np.array(matched_indices, np.int32).reshape(-1, 2)

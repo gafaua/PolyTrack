@@ -39,6 +39,7 @@ def demo(opt):
           if ext in image_ext:
               image_names.append(os.path.join(opt.demo, file_name))
     else:
+      raise NotADirectoryError
       image_names = [opt.demo]
 
   # Initialize output video
@@ -84,8 +85,10 @@ def demo(opt):
 
       # log run time
       time_str = 'frame {} |'.format(cnt)
+      fps = 1/ret['tot']
       for stat in time_stats:
         time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
+      time_str += f'fps {fps} |'
       print(time_str)
 
       # results[cnt] is a list of dicts:

@@ -1,5 +1,7 @@
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
+from filterpy.common import Q_discrete_white_noise
+
 import numpy as np
 
 
@@ -27,16 +29,34 @@ def fx(x, dt):
 class UKF_Tracker(object):
     def __init__(self, pos, dt):
         self.ukf = UKF(dim_x=6, dim_z=2, dt=dt, hx=hx, fx=fx ,points=points)
-        
-        self.ukf.R = np.diag() # TODO add measurement noise matrix 2x2 for measurements of x and y positions
-        self.ukf.Q = np.diag() # TODO add process noise matrix , using Q_discrete_white_noise()?
+
+        # Standard deviation confidence for centers prediction TODO check if value is ok
+        pos_std = 20
+
+        # Measurement noise matrix 2x2 for measurements of x and y positions
+        self.ukf.R = np.diag([pos_std**2, pos_std**2])
+        # Process noise matrix, TODO check var value is ok, possibility to use Q_continuous_white_noise()
+        self.ukf.Q = Q_discrete_white_noise(dim=3, dt=dt, block_size=2, var=0.01)
 
         # Init
-        self.ukf.x = np.array([pos[0], avg_speed_x, 0., pos[1], avg_speed_y, 0.]) # TODO add initial state
-        self.ukf.P = np.diag([])  # TODO create covariance matrix, at first we assume that all variables are independant, thus using a diagonal matrix
+        self.ukf.x = np.array([pos[0], 0, 0., pos[1], 0, 0.]) # TODO add initial state and test it
+        self.ukf.P = np.diag([10**2, 20**2, 20**2, 10**2, 20**2, 20**2])  # TODO create covariance matrix, at first we assume that all variables are independant, thus using a diagonal matrix
+
+        self.state_history = []
 
     def predict(self, dt=None):
         self.ukf.predict(dt=dt)
+        # TODO maybe add some checks to the covariance matrix to verify uncertainty 
+        # about the current state
+        state = self.ukf.x
         
+        self.state_history.append(state)
+        return state
+
+    def update_match(self, pos, dt=None):
+        self.ukf.predict(dt=None)
+        self.ukf.update(pos)
+        state = self.ukf.x
         
-    
+        self.state_history.append(state)
+        return state

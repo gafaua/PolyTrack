@@ -274,6 +274,12 @@ class opts(object):
                              help='Use ground truth centers instead of hm to'
                              'gather features and outputs')
 
+    self.parser.add_argument('--ukf', action='store_true',
+                             help='Use Unscented Kalman Filter for tracking')
+
+    self.parser.add_argument('--avg_polys', action='store_true',
+                             help='Averages polygons around the hm center point')
+
   def parse(self, args=''):
     if args == '':
       opt = self.parser.parse_args()
@@ -425,7 +431,8 @@ class opts(object):
     default_dataset_info = {
       'ctdet': 'coco', 'multi_pose': 'coco_hp', 'ddd': 'nuscenes',
       'tracking,ctdet': 'coco', 'tracking,multi_pose': 'coco_hp', 
-      'tracking,ddd': 'nuscenes', 'tracking,polydet': 'kitti_mots'
+      'tracking,ddd': 'nuscenes', 'tracking,polydet': 'mots', 
+      'tracking,polydet,kitti': 'kitti_mots',
     }
     opt = self.parse()
     from dataset.dataset_factory import dataset_factory
