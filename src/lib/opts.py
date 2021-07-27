@@ -280,6 +280,9 @@ class opts(object):
     self.parser.add_argument('--avg_polys', action='store_true',
                              help='Averages polygons around the hm center point')
 
+    self.parser.add_argument('--num_head_conv_poly', type=int, default=1)
+
+
   def parse(self, args=''):
     if args == '':
       opt = self.parser.parse_args()
@@ -416,9 +419,15 @@ class opts(object):
     for head in opt.weights:
       if opt.weights[head] == 0:
         del opt.heads[head]
-    opt.head_conv = {head: [opt.head_conv \
+    head_conv = opt.head_conv
+    opt.head_conv = {head: [head_conv \
       for i in range(opt.num_head_conv if head != 'reg' else 1)] for head in opt.heads}
     
+    if 'poly' in opt.head_conv and \
+      opt.num_head_conv != opt.num_head_conv_poly:
+      opt.head_conv['poly'] = [head_conv for _ in range(opt.num_head_conv_poly)]
+
+
     print('input h w:', opt.input_h, opt.input_w)
     print('heads', opt.heads)
     print('weights', opt.weights)

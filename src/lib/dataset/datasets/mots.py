@@ -9,20 +9,23 @@ import numpy as np
 from progress.bar import Bar
 from ..generic_dataset import GenericDataset
 
+USE_KITTI_MOTS_PRETRAIN = False
+
 class MOTS(GenericDataset):
-  num_categories = 1
   default_resolution = [510, 895]
   # default_resolution = [544, 960]
-  class_name = ['pedestrian']
-  max_objs = 256
-  cat_ids = {2:1}
+  max_objs = 100
+
+  num_categories = 2 if USE_KITTI_MOTS_PRETRAIN else 1
+  class_name = ['Car', 'Pedestrian'] if USE_KITTI_MOTS_PRETRAIN else ['Pedestrian']
+  cat_ids = {1:1, 2:2} if USE_KITTI_MOTS_PRETRAIN else {2:1}
 
   def __init__(self, opt, split):
     self.dataset_version = opt.dataset_version
 
     data_dir = os.path.join(opt.data_dir, 'MOTS')
     img_dir = os.path.join(data_dir, 'test' if split == 'test' else 'train')
-
+    self.split = split
     if opt.dataset_version == 'train_val':
       ann_path = os.path.join(data_dir, 'json_gt', '{}_{}.json'.format(split, opt.nbr_points))
     elif opt.dataset_version == 'train_full':
@@ -102,12 +105,17 @@ class MOTS(GenericDataset):
 
           Bar.suffix = f'[{j}/{len(images)}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td} |Tracks: {len(tracks_in_frame)}'
           bar.next()
+        bar.finish()
+        print()
 
 
   def run_eval(self, results, save_dir):
     save_dir = os.path.join(save_dir, 'results_mots_{}'.format(self.dataset_version))
     print(f'Saving results in {save_dir}')
     self.save_results(results, save_dir)
+    if self.split == 'test':
+      print('No tracking data for test set to compute validation results!')
+      return
     print('\nRunning eval...')
     gt_dir = os.path.join(self.opt.data_dir, 'MOTS')
     seqmaps_dir = os.path.join(gt_dir, 'seqmaps')

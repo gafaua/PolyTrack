@@ -92,6 +92,17 @@ def make_kp_layer(cnv_dim, curr_dim, out_dim):
         nn.Conv2d(curr_dim, out_dim, (1, 1))
     )
 
+def make_head(head_kernel, last_channel, conv_dims, out_channels):
+    sequence = [convolution(head_kernel, last_channel, conv_dims[0], with_bn=False)]
+
+    for i in range(1, len(conv_dims)):
+        sequence.append(nn.Conv2d(conv_dims[i-1], conv_dims[i], (1,1)))
+        sequence.append(nn.ReLU(inplace=True))
+
+    sequence.append(nn.Conv2d(conv_dims[-1], out_channels, kernel_size=(1,1)))
+
+    return nn.Sequential(*sequence)
+
 def make_inter_layer(dim):
     return residual(3, dim, dim)
 
@@ -159,7 +170,7 @@ class kp_module(nn.Module):
 
 class exkp(nn.Module):
     def __init__(
-        self, n, nstack, dims, modules, heads, pre=None, cnv_dim=256, 
+        self, n, nstack, dims, modules, heads, head_convs, pre=None, cnv_dim=256, 
         make_tl_layer=None, make_br_layer=None,
         make_cnv_layer=make_cnv_layer, make_heat_layer=make_kp_layer,
         make_tag_layer=make_kp_layer, make_regr_layer=make_kp_layer,
@@ -235,9 +246,12 @@ class exkp(nn.Module):
                     heat[-1].bias.data.fill_(-2.19)
             else:
                 module = nn.ModuleList([
-                    make_regr_layer(
-                        cnv_dim, curr_dim, heads[head]) for _ in range(nstack)
+                    make_head(3, curr_dim, head_convs[head], heads[head]) for _ in range(nstack)
                 ])
+                # module = nn.ModuleList([
+                #     make_regr_layer(
+                #         cnv_dim, curr_dim, heads[head]) for _ in range(nstack)
+                # ])
                 self.__setattr__(head, module)
 
 
@@ -274,13 +288,13 @@ def make_hg_layer(kernel, dim0, dim1, mod, layer=convolution, **kwargs):
 
 
 class HourglassNet(exkp):
-    def __init__(self, heads, num_stacks=2):
+    def __init__(self, heads, head_convs, num_stacks=2):
         n       = 5
         dims    = [256, 256, 384, 384, 384, 512]
         modules = [2, 2, 2, 2, 2, 4]
 
         super(HourglassNet, self).__init__(
-            n, num_stacks, dims, modules, heads,
+            n, num_stacks, dims, modules, heads, head_convs,
             make_tl_layer=None,
             make_br_layer=None,
             make_pool_layer=make_pool_layer,
@@ -293,4 +307,4 @@ class HourglassNet(exkp):
 #   return model
 
 def GetHourglass(num_layers, heads, head_convs, opt):
-    return HourglassNet(heads, num_stacks=opt.num_stacks)
+    return HourglassNet(heads, head_convs, num_stacks=opt.num_stacks)
