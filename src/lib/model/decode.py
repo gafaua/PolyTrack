@@ -80,6 +80,32 @@ def _update_kps_with_hm(
   else:
     return kps, kps
 
+def decode_polys(output, inds, batch, K, xs, ys):
+  polys = output['poly']
+  polys = _tranpose_and_gather_feat(polys, inds)
+  polys = polys.view(batch, K, polys.shape[-1])
+
+  polys[..., 0::2] += xs
+  polys[..., 1::2] += ys
+
+  # Get bounding boxes from polygons
+
+  poly_xs = polys[..., 0::2].clone().detach()
+  poly_ys = polys[..., 1::2].clone().detach()
+
+  poly_xs_min = torch.min(poly_xs, dim=2, keepdim=True)[0]
+  poly_xs_max = torch.max(poly_xs, dim=2, keepdim=True)[0]
+  poly_ys_min = torch.min(poly_ys, dim=2, keepdim=True)[0]
+  poly_ys_max = torch.max(poly_ys, dim=2, keepdim=True)[0]
+
+  # might need that for nms
+  bboxes = torch.cat([poly_xs_min,
+                  poly_ys_min,
+                  poly_xs_max,
+                  poly_ys_max], dim=2)
+
+  return polys, bboxes
+
 def generic_decode(output, K=100, opt=None):
   if not ('hm' in output):
     return {}
@@ -141,32 +167,28 @@ def generic_decode(output, K=100, opt=None):
  
   # PolyDet heads
   if 'poly' in output:
-    polys = output['poly']
-    polys = _tranpose_and_gather_feat(polys, inds)
-    polys = polys.view(batch, K, polys.shape[-1])
+    if opt.avg_polys:
+      polys, bboxes = decode_polys(output, inds, batch, K, xs, ys)
 
-    polys[..., 0::2] += xs
-    polys[..., 1::2] += ys
+      offsets = [-1,1]
+      print(polys.shape)
+      for x_off in offsets:
+        for y_off in offsets:
+          xs_ = torch.clamp(xs + x_off, min=0, max=width-1)
+          ys_ = torch.clamp(ys + y_off, min=0, max=height-1)
+          inds_ = (xs_ + ys_ * width).view((1,K)).long()
 
-    ret['poly'] = polys
+          polys_, bboxes_ = decode_polys(output, inds_, batch, K, xs_, ys_)
+          polys = polys + polys_
+          bboxes += bboxes_
 
-    # Get bounding boxes from polygons
+      ret['poly'] = polys/5
+      ret['bboxes'] = bboxes/5
 
-    poly_xs = polys[..., 0::2].clone().detach()
-    poly_ys = polys[..., 1::2].clone().detach()
-
-    poly_xs_min = torch.min(poly_xs, dim=2, keepdim=True)[0]
-    poly_xs_max = torch.max(poly_xs, dim=2, keepdim=True)[0]
-    poly_ys_min = torch.min(poly_ys, dim=2, keepdim=True)[0]
-    poly_ys_max = torch.max(poly_ys, dim=2, keepdim=True)[0]
-
-    # might need that for nms
-    bboxes = torch.cat([poly_xs_min,
-                    poly_ys_min,
-                    poly_xs_max,
-                    poly_ys_max], dim=2)
-
-    ret['bboxes'] = bboxes
+    else:
+      polys, bboxes = decode_polys(output, inds, batch, K, xs, ys)
+      ret['poly'] = polys
+      ret['bboxes'] = bboxes
 
   if 'pseudo_depth' in output:
     depth = output['pseudo_depth']
