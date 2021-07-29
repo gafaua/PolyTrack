@@ -19,7 +19,7 @@ python demo.py tracking,polydet \
 --demo ../data/MOTS/train/MOTS20-09/img1 \
 --arch hourglass \
 --track_thresh 0.6 --max_age 32 --ukf \
---save_video
+--save_video --avg_polys
 
 # --demo ../data/KITTIMOTS/test/0021 \
 

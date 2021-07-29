@@ -171,12 +171,11 @@ def generic_decode(output, K=100, opt=None):
       polys, bboxes = decode_polys(output, inds, batch, K, xs, ys)
 
       offsets = [-1,1]
-      print(polys.shape)
       for x_off in offsets:
         for y_off in offsets:
           xs_ = torch.clamp(xs + x_off, min=0, max=width-1)
           ys_ = torch.clamp(ys + y_off, min=0, max=height-1)
-          inds_ = (xs_ + ys_ * width).view((1,K)).long()
+          inds_ = (xs_.long() + ys_.long() * width).view((1,K))
 
           polys_, bboxes_ = decode_polys(output, inds_, batch, K, xs_, ys_)
           polys = polys + polys_

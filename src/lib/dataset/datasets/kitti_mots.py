@@ -100,4 +100,7 @@ class KITTIMOTS(GenericDataset):
 
   def run_eval(self, results, save_dir):
     # TODO
-    ...
+    save_dir = os.path.join(save_dir, 'results_kitti_mots_{}'.format(self.dataset_version))
+    print(f'Saving results in {save_dir}')
+    self.save_results(results, save_dir)
+
