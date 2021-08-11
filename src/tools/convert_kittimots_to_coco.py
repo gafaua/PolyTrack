@@ -10,9 +10,11 @@ DATA_PATH = '../../data/KITTIMOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
 SPLITS = ['train']
 NBR_VERTICES = 32
-VAL_SEQ = ['0001', '0002', '0006', '0007']
+VAL_SEQ = ['0000', '0001', '0002', '0007', '0016', '0017']
 
 if __name__ == '__main__':
+  seqmap = open(os.path.join(DATA_PATH, 'evaluate_mots.seqmap.val'), 'w')
+
   for split in SPLITS:
     data_path = DATA_PATH + split
     out_path = OUT_PATH + '{}_{}.json'.format(split, NBR_VERTICES)
@@ -39,18 +41,19 @@ if __name__ == '__main__':
         }
       out_full['videos'].append(video)
       
-      if split == 'train':
-        if seq in VAL_SEQ:
-          out_val['videos'].append(video)
-        else:
-          out_train['videos'].append(video)
-
       img_path = os.path.join(data_path, seq)
       ann_path = os.path.join(DATA_PATH, 'instances_txt', f'{seq}.txt')
       images = os.listdir(img_path)
       num_images = len([image for image in images if 'png' in image])
 
       image_range = [0, num_images - 1]
+
+      if split == 'train':
+        if seq in VAL_SEQ:
+          out_val['videos'].append(video)
+          seqmap.write(f'{seq} empty {image_range[0]} {image_range[1]}\n')
+        else:
+          out_train['videos'].append(video)
 
       for i in range(num_images):
         if (i < image_range[0] or i > image_range[1]):
@@ -147,5 +150,5 @@ if __name__ == '__main__':
       json.dump(out_val, open(out_path.replace('train', 'val'), 'w'), indent=1)
     else:
       json.dump(out_full, open(out_path, 'w'), indent=1)
-    
+
     print(f'Json files were generated for {split} with {NBR_VERTICES} vertices')

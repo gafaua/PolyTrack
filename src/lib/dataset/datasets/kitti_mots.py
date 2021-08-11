@@ -17,6 +17,9 @@ class KITTIMOTS(GenericDataset):
   cat_ids = {1:1, 2:2}
   max_objs = 50
   def __init__(self, opt, split):
+    self.split = split
+    self.dataset_version = opt.dataset_version
+
     data_dir = os.path.join(opt.data_dir, 'KITTIMOTS')
 
     img_dir = os.path.join(data_dir, 'test' if split == 'test' else 'train')
@@ -39,7 +42,7 @@ class KITTIMOTS(GenericDataset):
   def save_results(self, results, save_dir):
     results_dir = save_dir
     if not os.path.exists(results_dir):
-      os.mkdir(results_dir)
+      os.makedirs(results_dir)
 
     for video in self.coco.dataset['videos']:
       video_id = video['id']
@@ -53,7 +56,7 @@ class KITTIMOTS(GenericDataset):
           if not (image_info['id'] in results):
             continue
           result = results[image_info['id']]
-          frame_id = image_info['frame_id']
+          frame_id = int(image_info['frame_id']) - 1
           tracks_in_frame = []
 
           for item in result:
@@ -61,7 +64,7 @@ class KITTIMOTS(GenericDataset):
               item['tracking_id'] = np.random.randint(1000)
             if item['active'] == 0:
               continue
-            cat_id = 2 #result['class'] only pedestrians in MOTS
+            cat_id = item['class']
             tracking_id = item['tracking_id']
             rle_mask = rletools.frPyObjects([item['poly']], height, width)[0]
             track_id = f'{cat_id}{tracking_id:03}'
@@ -97,10 +100,24 @@ class KITTIMOTS(GenericDataset):
 
           Bar.suffix = f'[{j}/{len(images)}]|Tot: {bar.elapsed_td} |ETA: {bar.eta_td} |Tracks: {len(tracks_in_frame)}'
           bar.next()
+        bar.finish()
+        print()
 
   def run_eval(self, results, save_dir):
     # TODO
-    save_dir = os.path.join(save_dir, 'results_kitti_mots_{}'.format(self.dataset_version))
+    trackers_folder = os.path.join(save_dir, 'results_kitti_mots_{}'.format(self.dataset_version))
+    save_dir = os.path.join(trackers_folder, 'PolyTrack', 'data')
     print(f'Saving results in {save_dir}')
     self.save_results(results, save_dir)
+
+    if self.split == 'test':
+      print('No tracking data for test set to compute validation results!')
+      return
+    print('\nRunning eval...')
+
+    gt_dir = os.path.join(self.opt.data_dir, 'KITTIMOTS')
+    sub_folder = '/'
+    gt_loc_format = '{gt_folder}/instances_txt/{seq}.txt'
+
+    os.system(f'python tools/TrackEval/scripts/run_kitti_mots.py --GT_FOLDER {gt_dir} --TRACKERS_FOLDER {trackers_folder} --USE_PARALLEL True --GT_LOC_FORMAT {gt_loc_format}')
 
