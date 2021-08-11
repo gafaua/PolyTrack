@@ -116,7 +116,6 @@ class KITTIMOTS(GenericDataset):
     print('\nRunning eval...')
 
     gt_dir = os.path.join(self.opt.data_dir, 'KITTIMOTS')
-    sub_folder = '/'
     gt_loc_format = '{gt_folder}/instances_txt/{seq}.txt'
 
     os.system(f'python tools/TrackEval/scripts/run_kitti_mots.py --GT_FOLDER {gt_dir} --TRACKERS_FOLDER {trackers_folder} --USE_PARALLEL True --GT_LOC_FORMAT {gt_loc_format}')

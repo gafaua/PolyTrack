@@ -48,10 +48,11 @@ def demo(opt):
   print('out_name', out_name)
   if opt.save_video:
     # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
-    out = cv2.VideoWriter('../results/{}.mp4'.format(
-      opt.exp_id + '_' + out_name),fourcc, opt.save_framerate, (
-        opt.video_w, opt.video_h))
+    # fourcc = cv2.VideoWriter_fourcc(*'H264')
+    # out = cv2.VideoWriter('../results/{}.mp4'.format(
+    #   opt.exp_id + '_' + out_name),fourcc, opt.save_framerate, (
+    #     opt.video_w, opt.video_h))
+    out = None # Manually saving video
   
   if opt.debug < 5:
     detector.pause = False
@@ -97,7 +98,7 @@ def demo(opt):
 
       # save debug image to video
       if opt.save_video:
-        out.write(ret['generic'])
+        #out.write(ret['generic'])
         if not is_video:
           cv2.imwrite('../results/demo{}.jpg'.format(cnt), ret['generic'])
       
