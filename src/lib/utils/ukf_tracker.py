@@ -17,7 +17,7 @@ def fx(x, dt):
     x has the form [x, dx/dt, d2x/dt2, y, dy/dt, d2y/dt2]
     dt is the delta time, amount of time between state transitions
     """
-    dt2 = (dt**2)/2
+    dt2 = (dt*dt)/2
     F = np.array([[1, dt, dt2, 0,  0,   0],
                   [0,  1,  dt, 0,  0,   0],
                   [0,  0,   1, 0,  0,   0],
@@ -60,3 +60,6 @@ class UKF_Tracker(object):
         
         self.state_history.append(state)
         return state
+    
+    def get_speed(self):
+        return self.ukf.x[[1,4]]

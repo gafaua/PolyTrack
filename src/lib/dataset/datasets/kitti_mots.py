@@ -104,7 +104,7 @@ class KITTIMOTS(GenericDataset):
         print()
 
   def run_eval(self, results, save_dir):
-    # TODO
+    # Make sure that the TrackEval repo is in src/tools
     trackers_folder = os.path.join(save_dir, 'results_kitti_mots_{}'.format(self.dataset_version))
     save_dir = os.path.join(trackers_folder, 'PolyTrack', 'data')
     print(f'Saving results in {save_dir}')

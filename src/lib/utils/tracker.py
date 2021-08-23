@@ -21,7 +21,7 @@ class Tracker(object):
           bbox = item['bbox']
           item['ct'] = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
         if self.opt.ukf:
-          item['ukf'] = UKF_Tracker(item['ct'], dt=1) # TODO pass frame rate through dt parameter
+          item['ukf'] = UKF_Tracker(item['ct'], dt=1)
         self.tracks.append(item)
 
   def reset(self):
@@ -34,16 +34,28 @@ class Tracker(object):
 
     dets = np.array(
       [det['ct'] + det['tracking'] for det in results], np.float32) # N x 2
-    track_size = np.array([((track['bbox'][2] - track['bbox'][0]) * \
-      (track['bbox'][3] - track['bbox'][1])) \
-      for track in self.tracks], np.float32) # M
-    track_cat = np.array([track['class'] for track in self.tracks], np.int32) # M
+    tracks = np.array(
+      [pre_det['ct'] for pre_det in self.tracks], np.float32) # M x 2
+
     item_size = np.array([((item['bbox'][2] - item['bbox'][0]) * \
       (item['bbox'][3] - item['bbox'][1])) \
       for item in results], np.float32) # N
+    track_size = np.array([((track['bbox'][2] - track['bbox'][0]) * \
+      (track['bbox'][3] - track['bbox'][1])) \
+      for track in self.tracks], np.float32) # M
+    
     item_cat = np.array([item['class'] for item in results], np.int32) # N
-    tracks = np.array(
-      [pre_det['ct'] for pre_det in self.tracks], np.float32) # M x 2
+    track_cat = np.array([track['class'] for track in self.tracks], np.int32) # M
+    
+    # if self.opt.ukf:
+    #   normalize = lambda arr: (arr.T/np.linalg.norm(arr)).T
+
+    #   movement = normalize(np.array([-det['tracking'] for det in results], np.float32)) # N x 2
+    #   speed = normalize(np.array([track['ukf'].get_speed() for track in self.tracks], np.float32)) # M x 2
+    #   # TODO don't take into consideration recent tracks (ukf hasn't converged yet)
+    #   dets = np.concatenate((dets, movement), axis=1) if len(dets) > 0 else dets
+    #   tracks = np.concatenate((tracks, speed), axis=1) if len(tracks) > 0 else tracks
+
     dist = (((tracks.reshape(1, -1, 2) - \
               dets.reshape(-1, 1, 2)) ** 2).sum(axis=2)) # N x M
 
@@ -86,6 +98,8 @@ class Tracker(object):
         ukf = self.tracks[m[1]]['ukf']
         state = ukf.update_match(track['ct'])
         track['ukf'] = ukf
+        #idd, pos, vel, acc = track['tracking_id'], state[[0,3]], state[[1,4]], state[[2,5]]
+        #print(f'ID: {idd}, POS: {pos}, VEL: {vel}, ACC: {acc}')
 
       ret.append(track)
 
@@ -122,7 +136,7 @@ class Tracker(object):
             track['ukf'] = UKF_Tracker(track['ct'], dt=1) # TODO pass frame rate through dt parameter
 
           ret.append(track)
-    
+    #print("Unmatched tracks")
     for i in unmatched_tracks:
       track = self.tracks[i]
       if track['age'] < self.opt.max_age:
@@ -134,25 +148,23 @@ class Tracker(object):
         if self.opt.ukf:
           state = track['ukf'].predict()
           track['ct'] = state[[0,3]]
-          
+
+          #idd, pos, vel, acc = track['tracking_id'], state[[0,3]], state[[1,4]], state[[2,5]]
+          #print(f'ID: {idd}, POS: {pos}, VEL: {vel}, ACC: {acc}')
+
           dpos = track['ct'] - ct
           
           track['bbox'] = [
             bbox[0] + dpos[0], bbox[1] + dpos[1],
             bbox[2] + dpos[0], bbox[3] + dpos[1]]
-        else:
-          # TODO delete this useless code?
-          v = [0, 0]
-          track['bbox'] = [
-            bbox[0] + v[0], bbox[1] + v[1],
-            bbox[2] + v[0], bbox[3] + v[1]]
-          track['ct'] = [ct[0] + v[0], ct[1] + v[1]]
+
         ret.append(track)
   
     self.tracks = ret
     return ret
 
 def greedy_assignment(dist):
+  #print(dist)
   matched_indices = []
   if dist.shape[1] == 0:
     return np.array(matched_indices, np.int32).reshape(-1, 2)
