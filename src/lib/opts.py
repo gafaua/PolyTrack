@@ -282,6 +282,9 @@ class opts(object):
 
     self.parser.add_argument('--num_head_conv_poly', type=int, default=1)
 
+    self.parser.add_argument('--loss_max_poly', action='store_true',
+                              help='Use max loss instead of average for polys')
+
 
   def parse(self, args=''):
     if args == '':
@@ -439,9 +442,9 @@ class opts(object):
     # only used in demo
     default_dataset_info = {
       'ctdet': 'coco', 'multi_pose': 'coco_hp', 'ddd': 'nuscenes',
-      'tracking,ctdet': 'coco', 'tracking,multi_pose': 'coco_hp', 
+      'tracking,ctdet': 'mots', 'tracking,multi_pose': 'coco_hp', 
       'tracking,ddd': 'nuscenes', 'tracking,polydet': 'mots', 
-      'tracking,polydet,kitti': 'kitti_mots',
+      'tracking,polydet,kitti': 'kitti_mots', 'tracking':'mots'
     }
     opt = self.parse()
     from dataset.dataset_factory import dataset_factory

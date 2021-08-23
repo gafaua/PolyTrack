@@ -125,6 +125,22 @@ class RegWeightedL1Loss(nn.Module):
     loss = loss / (mask.sum() + 1e-4)
     return loss
 
+class RegMaxL1Loss(nn.Module):
+  def __init__(self):
+    super(RegMaxL1Loss, self).__init__()
+  
+  def forward(self, output, mask, ind, target):
+    pred = _tranpose_and_gather_feat(output, ind)
+    # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
+    loss = F.l1_loss(pred * mask, target * mask, reduction='none')
+    batch, K, dim = mask.shape
+
+    # Loss is the mean of the errors of the worst polygons in every image of the batch 
+
+    loss = loss.sum(2).max(1).values / dim # Shape [Batch]
+    loss = loss.mean()
+
+    return loss
 
 class WeightedBCELoss(nn.Module):
   def __init__(self):

@@ -10,7 +10,7 @@ from progress.bar import Bar
 from model.data_parallel import DataParallel
 from utils.utils import AverageMeter
 
-from model.losses import FastFocalLoss, RegWeightedL1Loss
+from model.losses import FastFocalLoss, RegWeightedL1Loss, RegMaxL1Loss
 from model.losses import BinRotLoss, WeightedBCELoss
 from model.decode import generic_decode
 from model.utils import _sigmoid, flip_tensor, flip_lr_off, flip_lr
@@ -22,6 +22,8 @@ class GenericLoss(torch.nn.Module):
     super(GenericLoss, self).__init__()
     self.crit = FastFocalLoss(opt=opt)
     self.crit_reg = RegWeightedL1Loss()
+    if 'poly' in opt.heads:
+      self.crit_poly = RegMaxL1Loss() if opt.loss_max_poly else self.crit_reg
     if 'rot' in opt.heads:
       self.crit_rot = BinRotLoss()
     if 'nuscenes_att' in opt.heads:
@@ -50,9 +52,14 @@ class GenericLoss(torch.nn.Module):
           output['hm'], batch['hm'], batch['ind'], 
           batch['mask'], batch['cat']) / opt.num_stacks
 
+      if 'poly' in output:
+        losses['poly'] += self.crit_poly(
+          output['poly'], batch['poly_mask'],
+          batch['ind'], batch['poly']) / opt.num_stacks
+
       regression_heads = [
         'reg', 'wh', 'tracking', 'ltrb', 'ltrb_amodal', 'hps', 
-        'dep', 'dim', 'amodel_offset', 'velocity', 'poly', 'pseudo_depth']
+        'dep', 'dim', 'amodel_offset', 'velocity', 'pseudo_depth']
 
       for head in regression_heads:
         if head in output:
