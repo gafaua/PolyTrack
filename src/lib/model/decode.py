@@ -93,18 +93,23 @@ def decode_polys(output, inds, batch, K, xs, ys):
   poly_xs = polys[..., 0::2].clone().detach()
   poly_ys = polys[..., 1::2].clone().detach()
 
+  poly_xs_shift = poly_xs.roll(1, dims=2)
+  poly_ys_shift = poly_ys.roll(1, dims=2)
+  areas = ((poly_xs*poly_ys_shift - poly_ys*poly_xs_shift).sum(2) / 2).abs().view(1, K, 1)
+
   poly_xs_min = torch.min(poly_xs, dim=2, keepdim=True)[0]
   poly_xs_max = torch.max(poly_xs, dim=2, keepdim=True)[0]
   poly_ys_min = torch.min(poly_ys, dim=2, keepdim=True)[0]
   poly_ys_max = torch.max(poly_ys, dim=2, keepdim=True)[0]
 
+  #areas = (poly_xs_max - poly_xs_min) * (poly_ys_max - poly_ys_min)
   # might need that for nms
   bboxes = torch.cat([poly_xs_min,
                   poly_ys_min,
                   poly_xs_max,
                   poly_ys_max], dim=2)
 
-  return polys, bboxes
+  return polys, bboxes, areas
 
 def generic_decode(output, K=100, opt=None):
   if not ('hm' in output):
@@ -154,7 +159,7 @@ def generic_decode(output, K=100, opt=None):
                         ys + wh[..., 1:2] / 2], dim=2)
     ret['bboxes'] = bboxes
     # print('ret bbox', ret['bboxes'])
- 
+
   if 'ltrb' in output:
     ltrb = output['ltrb']
     ltrb = _tranpose_and_gather_feat(ltrb, inds) # B x K x 4
@@ -168,24 +173,25 @@ def generic_decode(output, K=100, opt=None):
   # PolyDet heads
   if 'poly' in output:
     if opt.avg_polys:
-      polys, bboxes = decode_polys(output, inds, batch, K, xs, ys)
+      polys, bboxes, areas = decode_polys(output, inds, batch, K, xs, ys)
 
-      offsets = [-1,1]
+      offsets = [-1, 1, 0]
       for x_off in offsets:
         for y_off in offsets:
           xs_ = torch.clamp(xs + x_off, min=0, max=width-1)
           ys_ = torch.clamp(ys + y_off, min=0, max=height-1)
           inds_ = (xs_.long() + ys_.long() * width).view((1,K))
 
-          polys_, bboxes_ = decode_polys(output, inds_, batch, K, xs_, ys_)
-          polys = polys + polys_
-          bboxes += bboxes_
+          polys_, bboxes_, areas_ = decode_polys(output, inds_, batch, K, xs_, ys_)
+          
+          polys = torch.where(areas_ > areas, polys_, polys)
+          bboxes = torch.where(areas_ > areas, bboxes_, bboxes)
 
-      ret['poly'] = polys/5
-      ret['bboxes'] = bboxes/5
+      ret['poly'] = polys
+      ret['bboxes'] = bboxes
 
     else:
-      polys, bboxes = decode_polys(output, inds, batch, K, xs, ys)
+      polys, bboxes, _ = decode_polys(output, inds, batch, K, xs, ys)
       ret['poly'] = polys
       ret['bboxes'] = bboxes
 
