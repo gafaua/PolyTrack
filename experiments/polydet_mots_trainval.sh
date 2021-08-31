@@ -21,7 +21,7 @@ python test.py tracking,polydet \
 --pre_hm --same_aug --nbr_points 32 --elliptical_gt \
 --head_conv 256 --num_head_conv_poly 3 \
 --load_model ../exp/tracking,polydet/mots_trainval_testing_poly_head/model_best.pth \
---track_thresh 0.65 --max_age 32
+--track_thresh 0.7 --max_age 32
 
 # --load_model ../exp/tracking,polydet/mots_trainval_pre_hg_round/model_best.pth \
 cd ..

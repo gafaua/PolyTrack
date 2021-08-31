@@ -8,7 +8,7 @@ from progress.bar import Bar
 
 DATA_PATH = '../../data/KITTIMOTS/'
 OUT_PATH = DATA_PATH + 'json_gt/'
-SPLITS = ['train']
+SPLITS = ['test', 'train']
 NBR_VERTICES = 32
 VAL_SEQ = ['0000', '0001', '0002', '0007', '0016', '0017']
 
