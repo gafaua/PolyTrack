@@ -154,6 +154,8 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
   return heatmap
 
 def gaussian_ellipse_2d(shape, sigma=1):
+  # This code is faster and more consistent than the gaussian_ellipse_2d found
+  # in CenterPoly
   grid = np.zeros(shape)
   center_x, center_y = int(shape[0]/2), int(shape[1]/2)
   max_radius = max(shape[0], shape[1])

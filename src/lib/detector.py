@@ -438,7 +438,6 @@ class Detector(object):
           c = (c, 255, c, 110)
           debugger.add_poly(item['poly'], c=c, img_id='generic')
 
-        # TODO Add pseudo depth information
         if 'tracking' in item:
           debugger.add_arrow(item['ct'], item['tracking'], img_id='generic')
         

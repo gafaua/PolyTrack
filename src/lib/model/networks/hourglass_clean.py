@@ -88,13 +88,6 @@ def make_base_layer(inp_dim, out_dim):
         Residual(3, 128, out_dim, stride=2)
     )
 
-# def make_base_layer(inp_dim, out_dim):
-#     return nn.Sequential(
-#         nn.Conv2d(inp_dim, out_dim, kernel_size=7, stride=1, padding=3, bias=False),
-#         nn.BatchNorm2d(out_dim, momentum=BN_MOMENTUM),
-#         nn.ReLU(inplace=True)
-#     )
-
 
 class HourglassModule(nn.Module):
     def __init__(
@@ -119,13 +112,11 @@ class HourglassModule(nn.Module):
         self.up2  = nn.Upsample(scale_factor=2)
 
     def forward(self, x):
-        # print('AVANT: ', x.shape)
         up1  = self.up1(x)
         low1 = self.low1(x)
         low2 = self.low2(low1)
         low3 = self.low3(low2)
         up2  = self.up2(low3)
-        # print('APRÈS: ', up1.shape)
         return up1 + up2
 
 
@@ -186,6 +177,9 @@ class HourglassNetwork(nn.Module):
 
 
 class Hourglass(BaseModel):
+    # This class is not used because of compatibility issues with parameter names when trying
+    # to finetune a model from CenterNet/CenterTrack/CenterPoly
+    # It generates the exact same architecture as the one found in hourglass.py
     def __init__(self, heads, head_convs, opt):
         self.opt = opt
 
@@ -199,7 +193,6 @@ class Hourglass(BaseModel):
         super(Hourglass, self).__init__(
             heads, head_convs, num_stacks, dims[0], opt=opt)
 
-        # TODO create functions for different stacks
         self.hg = HourglassNetwork(dims, modules, num_stacks)
 
         if opt.pre_img:

@@ -96,7 +96,7 @@ def make_head(head_kernel, last_channel, conv_dims, out_channels):
     sequence = [convolution(head_kernel, last_channel, conv_dims[0], with_bn=False)]
 
     for i in range(1, len(conv_dims)):
-        sequence.append(convolution(head_kernel, conv_dims[i-1], conv_dims[i-1], with_bn=False))
+        #sequence.append(convolution(head_kernel, conv_dims[i-1], conv_dims[i-1], with_bn=False))
         sequence.append(nn.Conv2d(conv_dims[i-1], conv_dims[i], (1,1)))
         sequence.append(nn.ReLU(inplace=True))
 

@@ -1,11 +1,11 @@
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
-from filterpy.common import Q_discrete_white_noise
+from filterpy.common import Q_discrete_white_noise, Q_continuous_white_noise
 
 import numpy as np
 
 
-points = MerweScaledSigmaPoints(n=6, alpha=.1, beta=2., kappa=3) # TODO change those parameters
+points = MerweScaledSigmaPoints(n=6, alpha=1e-3, beta=2., kappa=3)
 
 def hx(x):
     return x[[0,3]]
@@ -37,10 +37,11 @@ class UKF_Tracker(object):
         self.ukf.R = np.diag([pos_std**2, pos_std**2])
         # Process noise matrix, TODO check var value is ok, possibility to use Q_continuous_white_noise()
         self.ukf.Q = Q_discrete_white_noise(dim=3, dt=dt, block_size=2, var=0.01)
+        #self.ukf.Q = Q_continuous_white_noise(dim=3,block_size=2)
 
         # Init
-        self.ukf.x = np.array([pos[0], 0, 0., pos[1], 0, 0.]) # TODO add initial state and test it
-        self.ukf.P = np.diag([10**2, 20**2, 20**2, 10**2, 20**2, 20**2])  # TODO create covariance matrix, at first we assume that all variables are independant, thus using a diagonal matrix
+        self.ukf.x = np.array([pos[0], 0, 0., pos[1], 0, 0.]) # Initial state
+        self.ukf.P = np.diag([10**2, 20**2, 20**2, 10**2, 20**2, 20**2])  # Covariance matrix, at first we assume that all variables are independant, thus using a diagonal matrix
 
         self.state_history = []
 
@@ -61,5 +62,3 @@ class UKF_Tracker(object):
         self.state_history.append(state)
         return state
     
-    def get_speed(self):
-        return self.ukf.x[[1,4]]

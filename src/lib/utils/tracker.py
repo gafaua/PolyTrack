@@ -47,15 +47,6 @@ class Tracker(object):
     item_cat = np.array([item['class'] for item in results], np.int32) # N
     track_cat = np.array([track['class'] for track in self.tracks], np.int32) # M
     
-    # if self.opt.ukf:
-    #   normalize = lambda arr: (arr.T/np.linalg.norm(arr)).T
-
-    #   movement = normalize(np.array([-det['tracking'] for det in results], np.float32)) # N x 2
-    #   speed = normalize(np.array([track['ukf'].get_speed() for track in self.tracks], np.float32)) # M x 2
-    #   # TODO don't take into consideration recent tracks (ukf hasn't converged yet)
-    #   dets = np.concatenate((dets, movement), axis=1) if len(dets) > 0 else dets
-    #   tracks = np.concatenate((tracks, speed), axis=1) if len(tracks) > 0 else tracks
-
     dist = (((tracks.reshape(1, -1, 2) - \
               dets.reshape(-1, 1, 2)) ** 2).sum(axis=2)) # N x M
 
@@ -133,7 +124,7 @@ class Tracker(object):
           track['active'] =  1
 
           if self.opt.ukf:
-            track['ukf'] = UKF_Tracker(track['ct'], dt=1) # TODO pass frame rate through dt parameter
+            track['ukf'] = UKF_Tracker(track['ct'], dt=1)
 
           ret.append(track)
     #print("Unmatched tracks")
@@ -164,7 +155,6 @@ class Tracker(object):
     return ret
 
 def greedy_assignment(dist):
-  #print(dist)
   matched_indices = []
   if dist.shape[1] == 0:
     return np.array(matched_indices, np.int32).reshape(-1, 2)

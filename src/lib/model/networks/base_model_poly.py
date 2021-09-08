@@ -24,6 +24,7 @@ def make_head(head_kernel, last_channel, conv_dims, out_channels):
     return nn.Sequential(*sequence)
 
 class BaseModelPoly(nn.Module):
+  # This class is not used, but you can see it as a clarification of BaseModel
     def __init__(self, heads, head_convs, num_stacks, last_channel, opt=None):
         super(BaseModelPoly, self).__init__()
         if opt is not None and opt.head_kernel != 3:
