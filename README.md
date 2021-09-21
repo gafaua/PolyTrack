@@ -1,35 +1,24 @@
-# Tracking Objects as Points
-Simultaneous object detection and tracking using center points:
-![](readme/fig2.png)
-> [**Tracking Objects as Points**](http://arxiv.org/abs/2004.01177),            
-> Xingyi Zhou, Vladlen Koltun, Philipp Kr&auml;henb&uuml;hl,        
-> *arXiv technical report ([arXiv 2004.01177](http://arxiv.org/abs/2004.01177))*  
-
-
-    @article{zhou2020tracking,
-      title={Tracking Objects as Points},
-      author={Zhou, Xingyi and Koltun, Vladlen and Kr{\"a}henb{\"u}hl, Philipp},
-      journal={ECCV},
-      year={2020}
-    }
-
-Contact: [zhouxy@cs.utexas.edu](mailto:zhouxy@cs.utexas.edu). Any questions or discussion are welcome! 
+# PolyTrack: Tracking with Bounding Polygons
 
 ## Abstract
-Tracking has traditionally been the art of following interest points through space and time. This changed with the rise of powerful deep networks. Nowadays, tracking is dominated by pipelines that perform object detection followed by temporal association, also known as tracking-by-detection. In this paper, we present a simultaneous detection and tracking algorithm that is simpler, faster, and more accurate than the state of the art. Our tracker, CenterTrack, applies a detection model to a pair of images and detections from the prior frame. Given this minimal input, CenterTrack localizes objects and predicts their associations with the previous frame. That's it. CenterTrack is simple, online (no peeking into the future), and real-time. It achieves 67.3% MOTA on the MOT17 challenge at 22 FPS and 89.4% MOTA on the KITTI tracking benchmark at 15 FPS, setting a new state of the art on both datasets. CenterTrack is easily extended to monocular 3D tracking by regressing additional 3D attributes. Using monocular video input, it achieves 28.3% AMOTA@0.2 on the newly released nuScenes 3D tracking benchmark, substantially outperforming the monocular baseline on this benchmark while running at 28 FPS.
+In this paper, we present a novel method called PolyTrack for fast multi-object tracking and segmentation using bounding polygons. Polytrack detects objects by producing heatmaps of their center keypoint. For each of them, a rough segmentation is done by computing a bounding polygon over each instance instead of the traditional bounding box. Tracking is done by taking two consecutive frames as input and computing a center offset for each object detected in the first frame to predict their location in the second frame. A Kalman filter is also applied to reduce the number of ID switches. Since our target application is automated driving systems, we apply our method on urban environment videos. We train and evaluate PolyTrack on the MOTS and KITTIMOTS dataset.
 
 
-## Features at a glance
+## Example results
 
-- One-sentence method summary: Our model takes the current frame, the previous frame, and a heatmap rendered from previous tracking results as input, and predicts the current detection heatmap as well as their offsets to centers in the previous frame.
+Bounding polygons and tracking      |  
+:----------------------------------:|
+![](readme/imgs/demo130.jpg)        |  
+![](readme/imgs/demo131.jpg)        |  
+![](readme/imgs/demo132.jpg)        |  
+![](readme/imgs/demo133.jpg)        |  
+![](readme/imgs/demo134.jpg)        |  
+![](readme/imgs/demo135.jpg)        |  
+![](readme/imgs/demo136.jpg)        |  
+![](readme/imgs/demo137.jpg)        |  
+![](readme/imgs/demo138.jpg)        |  
 
-- The model can be trained on still **image datasets** if videos are not available.
 
-- Easily extends to monocular 3d object tracking, multi-category tracking, and pose tracking.
-
-- State-of-the-art performance on MOT17, KITTI, and nuScenes monocular tracking benchmarks.
-
-## Main results
 
 ### Pedestrian tracking on MOT17 test set
 
@@ -38,17 +27,6 @@ Tracking has traditionally been the art of following interest points through spa
 |Public        | 61.5      |  22    |
 |Private       | 67.8      |  22    |
 
-### 2D vehicle tracking on KITTI test set (with flip test)
-
-|  MOTA       |  FPS   |
-|-------------|--------|
-| 89.44       |   15   |
-
-### 3D tracking on nuScenes test set
-
-|  AMOTA @ 0.2  |  AMOTA  |  FPS   |
-|---------------|---------|--------|
-| 27.8          |    4.6  | 28     |
 
 Besides benchmark evaluation, we also provide models for 80-category tracking and pose tracking trained on COCO. See the sample visual results below (Video files from [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) and [YOLO](https://pjreddie.com/darknet/yolov2/)).
 
