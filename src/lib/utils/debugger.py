@@ -167,7 +167,7 @@ class Debugger(object):
       txt = '{}{}'.format(self.names[cat], ID)
     else:
       txt = '{}{:.1f}'.format(self.names[cat], conf)
-    thickness = 2
+    thickness = 1
     fontsize = 0.8 if self.opt.qualitative else 0.5
     if not self.opt.not_show_bbox:
       font = cv2.FONT_HERSHEY_SIMPLEX
