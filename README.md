@@ -1,5 +1,7 @@
 # PolyTrack: Tracking with Bounding Polygons
 
+Paper available at: https://arxiv.org/abs/2111.01606
+
 ## Abstract
 In this paper, we present a novel method called PolyTrack for fast multi-object tracking and segmentation using bounding polygons. Polytrack detects objects by producing heatmaps of their center keypoint. For each of them, a rough segmentation is done by computing a bounding polygon over each instance instead of the traditional bounding box. Tracking is done by taking two consecutive frames as input and computing a center offset for each object detected in the first frame to predict their location in the second frame. A Kalman filter is also applied to reduce the number of ID switches. Since our target application is automated driving systems, we apply our method on urban environment videos. We train and evaluate PolyTrack on the MOTS and KITTIMOTS dataset.
 
